@@ -1,0 +1,8 @@
+{
+    "name": "arma3-serverstats",
+    "version": "1.0.0",
+    "dependencies": {
+        "sock-rpc": "1.0.x",
+        "redis": "0.12.x"
+    }
+}

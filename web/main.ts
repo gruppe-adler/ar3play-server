@@ -75,7 +75,6 @@ function init() {
             mapTypeControlOptions: {
                 mapTypeIds: [google.maps.MapTypeId.ROADMAP, 'armaMapType']
             }
-
         }
     );
 

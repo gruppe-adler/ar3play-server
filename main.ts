@@ -51,8 +51,8 @@ rpc.register("getDate", function (callback) {
 
 rpc.register("setPosition", function (name, position, callback) {
     console.log(name + ': ' + position.map(function (p) {return p.toFixed(0);}).join('/'));
-    players[name].position.x = position[0];
-    players[name].position.y = position[1];
+    players[name] = players[name] || {};
+    players[name].position = { x: position[0], y: position[1] };
     callback(null, new Date().toISOString());
 });
 

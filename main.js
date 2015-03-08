@@ -3,7 +3,11 @@
 var
     rpc = require('sock-rpc'),
     redis = require('redis'),
-    redisClient = redis.createClient();
+    redisClient = redis.createClient(),
+    http = require('http'),
+    positions = {
+        dummy: [0, 0]
+    };
 
 redisClient.select(2);
 
@@ -30,6 +34,7 @@ rpc.register("getDate", function (callback) {
 
 rpc.register("setPosition", function (name, position, callback) {
     console.log(name + ': ' + position.map(function (p) {return p.toFixed(0);}).join('/'));
+    positions[name] = position;
     callback(null, new Date().toISOString());
 });
 
@@ -49,4 +54,22 @@ rpc.register("setPlayerNames", function (playerNames, callback) {
     callback();
 });
 
-rpc.listen("::1", 5555);  
+rpc.listen("::1", 5555);
+
+
+
+http.createServer(function (req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+
+    // intercept OPTIONS method
+    if ('OPTIONS' == req.method) {
+        res.send(200);
+        res.end();
+        return;
+    }
+
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify(positions));
+}).listen(12302);

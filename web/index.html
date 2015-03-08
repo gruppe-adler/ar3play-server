@@ -28,6 +28,9 @@
 </div>
 <script>
 
+    var dataUrl = 'http://gruppe-adler.de:12302/';
+
+
     var armaMapType = new google.maps.ImageMapType({
                 getTileUrl: function (coord, zoom) {
 
@@ -96,6 +99,23 @@
             z: 0
         };
     }
+
+    setInterval(function () {
+        var markers = {};
+
+        $.get(dataUrl, function (data) {
+            _.each(data, function (val, name) {
+                var m = markers[name] || new google.maps.Marker({
+                    position: {lat: 0, lng: 0},
+                    map: map,
+                    title: name
+                 });
+                m.setPosition(gameCoordsToLatLng(val[0], val[1]));
+
+                markers[name] = m;
+            });
+        });
+    }, 1000);
 
 </script>
 </body>

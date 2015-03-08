@@ -20,18 +20,18 @@ var initialZoom = 7;
 var tileSize = 256;
 
 var map;
+var markers = {};
 
 function log2(x) {
     return Math.log(x) / Math.LN2;
 }
 
-function isOutOfBounds(coords: Coords, zoom: number) {
-    var numTiles = Math.pow(2, zoom - 1);
-    if (coords.y < 0 || coords.y >= numTiles) {
-        return null;
+function isOutOfBounds(x: number, y: number, numTiles: number) {
+    if (y < 0 || y >= numTiles) {
+        return true;
     }
-    if (coords.x < 0 || coords.x >= numTiles) {
-        return null;
+    if (x < 0 || x >= numTiles) {
+        return true;
     }
 }
 
@@ -42,16 +42,15 @@ var armaMapType = new google.maps.ImageMapType({
             var y = coord.y;
 
             var numTiles = Math.pow(2, zoom - 1);
-
-            /*if (isOutOfBounds(coord, zoom)) {
-                return null;
-            }*/
-
-
             var tileZoom = zoom - initialZoom;
+
             x = x - numTiles;
             y = y - numTiles;
-            console.log('map coords ' + coord.x + ' / ' + coord.y + ', zoom: ' + zoom + '. looking for tiles ' + tileZoom + ' / ' + x + ' / ' + y);
+
+            if (isOutOfBounds(x, y, numTiles)) {
+                return null;
+            }
+
             var myY = Math.pow(2, tileZoom) - (y + 1);
 
             var baseURL = 'stratis_18022/';
@@ -84,6 +83,21 @@ function init() {
     map.setMapTypeId('map');
 
 
+
+    $('#toggle-names').click((function () {
+        var isOpen = false;
+        return function () {
+            _.each(markers, function (m) {
+                if (isOpen) {
+
+                }
+                m.infowindow[isOpen ? 'close' : 'open'](map, m);
+                console.log(m.infowindow.content);
+            });
+            isOpen = !isOpen;
+        };
+    }()));
+
 }
 google.maps.event.addDomListener(window, 'load', init);
 
@@ -91,7 +105,6 @@ google.maps.event.addDomListener(window, 'load', init);
  * in-game coordinates are in meters, with 0,0 at south west corner of map
  * @param x
  * @param y
- * @param z
  *
  * For simplicity's sake, I will translate
  *
@@ -109,7 +122,6 @@ function latLngToGameCoords(latLng) {
 }
 
 setInterval(function () {
-    var markers = {};
 
     $.get(dataUrl, function (data) {
         _.each(data, function (val, name) {
@@ -118,7 +130,13 @@ setInterval(function () {
                     map: map,
                     title: name
                 });
-            m.setPosition(gameCoordsToLatLng(val[0], val[1]));
+            m.setPosition(gameCoordsToLatLng(val.position.x, val.position.y));
+            m.setIcon('images/player-' + (val.side || 'unknown') + '.png');
+            m.infowindow = m.infowindow || new google.maps.InfoWindow({
+                content: '?'
+            });
+            m.infowindow.content = '<div>'  + name + '</div>';
+
 
             markers[name] = m;
         });

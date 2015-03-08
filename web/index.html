@@ -11,7 +11,7 @@
     <style>
         #map {
             min-height: 400px;
-            min-width: 200px;
+            min-width: 400px;
             background-color: pink;
         }
     </style>
@@ -30,15 +30,11 @@ https://developers.google.com/maps/documentation/javascript/examples/map-project
 </div>
 <script>
 
-
     var armaMapType = new google.maps.ImageMapType({
                 getTileUrl: function (coord, zoom) {
 
-                    var numAvailableTilesForZoom = [1, 2, 3, 5, 9, 18, 36, 71];
-
-                    console.log(zoom + ': ' + coord.x + ' ' + coord.y);
-                    var numTiles = Math.pow(2, zoom); // numAvailableTilesForZoom[zoom];
-                    // var numTiles = numAvailableTilesForZoom[zoom];
+                    window.coord = coord;
+                    var numTiles = Math.pow(2, zoom);
 
                     if (coord.y < 0 || coord.y >= numTiles) {
                         return null;
@@ -47,31 +43,19 @@ https://developers.google.com/maps/documentation/javascript/examples/map-project
                         return null;
                     }
 
+                    var myY = Math.pow(2, zoom) - (coord.y + 1);
+
                     var baseURL = 'stratis_18022/';
-                    baseURL += [zoom, coord.x, coord.y].join('/') + '.png';
+                    baseURL += [zoom, coord.x, myY].join('/') + '.png';
                     return baseURL;
                 },
                 tileSize: new google.maps.Size(256, 256),
                 isPng: true,
                 minZoom: 0,
                 maxZoom: 7,
-                name: 'Stratis T10',
-                getTile: function (coord, zoom, ownerDocument) {
-                    console.log('get tile!');
-                    var div = ownerDocument.createElement('div');
-                    div.innerHTML = coord;
-                    div.style.width = this.tileSize.width + 'px';
-                    div.style.height = this.tileSize.height + 'px';
-                    div.style.fontSize = '10';
-                    div.style.borderStyle = 'solid';
-                    div.style.borderWidth = '1px';
-                    div.style.backgroundColor = 'red';
-                    div.style.borderColor = 'yellow';
-                    return div;
-                }
+                name: 'Stratis T10'
             }
     );
-
 
     function init() {
 
@@ -86,8 +70,7 @@ https://developers.google.com/maps/documentation/javascript/examples/map-project
 
                 }
         );
-
-
+        
         map.mapTypes.set('map', armaMapType);
         map.setMapTypeId('map');
 

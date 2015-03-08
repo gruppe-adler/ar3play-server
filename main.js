@@ -6,8 +6,9 @@ var
     redisClient = redis.createClient(),
     http = require('http'),
     positions = {
-        dummy: [0, 0],
-        dummy2: [1000, 1000]
+        refZeroZero: [0, 0],
+        refOneOne: [1000, 1000],
+        dummy: [2000, 1684]
     };
 
 redisClient.select(2);
@@ -74,3 +75,9 @@ http.createServer(function (req, res) {
     res.writeHead(200, {'Content-Type': 'application/json'});
     res.end(JSON.stringify(positions));
 }).listen(12302);
+
+
+setInterval(function () {
+    positions.dummy[0] += 1;
+    positions.dummy[1] += 2;
+}, 1000);

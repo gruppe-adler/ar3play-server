@@ -6,7 +6,8 @@ var
     redisClient = redis.createClient(),
     http = require('http'),
     positions = {
-        dummy: [0, 0]
+        dummy: [0, 0],
+        dummy2: [1000, 1000]
     };
 
 redisClient.select(2);

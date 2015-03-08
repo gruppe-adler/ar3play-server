@@ -104,13 +104,13 @@
      *
      */
     function gameCoordsToLatLng(x, y, z) {
-        return new google.maps.LatLng(x / 1000, y / 1000);
+        return new google.maps.LatLng(y * 0.000189 + + - 2.8115, x * 0.000188 );
     }
 
     function latLngToGameCoords(latLng) {
         return {
-            x: latLng.lat() * 1000,
-            y: latLng.lng() * 1000,
+            x: latLng.lat() / 0.000188,
+            y: latLng.lng() + 2.8115  / 0.000189,
             z: 0
         };
     }
@@ -131,7 +131,13 @@
             });
         });
     }, 2000);
-
+/*
+*
+* Ursprung: (links unten): {lat: -2.8115, lng: -0}
+* 1km lat === 0.188 ===>
+* 1km lng === 0.189
+ }
+ */
 </script>
 </body>
 </html>

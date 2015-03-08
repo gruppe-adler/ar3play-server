@@ -73,7 +73,15 @@ rpc.register("setPlayerNames", function (playerNames, callback) {
 });
 
 rpc.register("setPlayerSide", function (playerName: string, side: string) {
-    players[playerName].side = side;
+    var clientSide;
+    switch (side) {
+        case "WEST": clientSide = 'blufor'; break;
+        case "EAST": clientSide = 'opfor'; break;
+        case "GUER": clientSide = 'ind'; break;
+        case "CIV": clientSide = 'civ'; break;
+        default: clientSide = 'unknown'; console.log('strange side: ' + side);
+    }
+    players[playerName].side = clientSide;
 });
 
 rpc.listen("::1", 5555);

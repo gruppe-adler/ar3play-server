@@ -38,7 +38,7 @@ var armaMapType = new google.maps.ImageMapType({
     },
     tileSize: new google.maps.Size(tileSize, tileSize),
     isPng: true,
-    minZoom: initialZoom,
+    minZoom: initialZoom + 2,
     maxZoom: initialZoom + 7,
     name: 'Stratis T10'
 });

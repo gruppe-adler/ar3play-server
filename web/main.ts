@@ -6,11 +6,6 @@
  * 1km lng === 0.189
  */
 
-interface Coords {
-    x: number;
-    y: number;
-}
-
 declare var google;
 declare var $;
 declare var _;
@@ -59,7 +54,7 @@ var armaMapType = new google.maps.ImageMapType({
         },
         tileSize: new google.maps.Size(tileSize, tileSize),
         isPng: true,
-        minZoom: initialZoom,
+        minZoom: initialZoom + 2,
         maxZoom: initialZoom + 7,
         name: 'Stratis T10'
     }

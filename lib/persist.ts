@@ -54,7 +54,11 @@ function getAllPlayers(missionInstanceName: string, cb: Function) {
 }
 
 export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
-    getCurrentMission(function (missionInstanceName) {
+    getCurrentMission(function (err: Error, missionInstanceName: string) {
+        if (err) {
+            cb(err, false);
+            return;
+        }
         redisClient.hget(sprintf('mission:%s', missionInstanceName), 'is_streamable', function (err: Error, data) {
             cb(err, data === '1');
         });

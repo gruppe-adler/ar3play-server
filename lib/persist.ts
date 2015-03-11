@@ -98,13 +98,21 @@ export function missionEnd(cb?: AsyncResultCallback<any>) {
     cb && cb(null, 201);
 }
 
-export function missionStart(name: string, cb?: AsyncResultCallback<any>) {
+export function missionStart(missionname: string, worldname: string, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
-    var currentMissionInstance = getMissionInstanceName(name, now);
+    var currentMissionInstance = getMissionInstanceName(missionname, now);
 
     missionEnd(function () {
         redisClient.set('currentMission', currentMissionInstance, dummyCallback);
         redisClient.zadd('missions', now, currentMissionInstance, dummyCallback);
+        redisClient.hmset(
+            sprintf('mission:%s', currentMissionInstance),
+            {
+                worldname: worldname,
+                starttime: now
+            },
+            dummyCallback
+        );
     });
 
     cb && cb(null, 201);
@@ -113,10 +121,13 @@ export function missionStart(name: string, cb?: AsyncResultCallback<any>) {
 export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     getCurrentMission(function (err: Error, missionName: string) {
-        redisClient.hmset(sprintf('mission:%s', missionName), {
-            is_streamable: isStreamable ? '1' : '0',
-            starttime: now
-        }, dummyCallback);
+        redisClient.hmset(
+            sprintf('mission:%s', missionName),
+            {
+                is_streamable: isStreamable ? '1' : '0'
+            },
+            dummyCallback
+        );
     });
 
     cb && cb(null, 201);

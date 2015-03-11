@@ -101,8 +101,11 @@ export function missionEnd(cb?: AsyncResultCallback<any>) {
 export function missionStart(name: string, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     var currentMissionInstance = getMissionInstanceName(name, now);
-    redisClient.set('currentMission', currentMissionInstance, dummyCallback);
-    redisClient.zadd('missions', now, currentMissionInstance, dummyCallback);
+
+    missionEnd(function () {
+        redisClient.set('currentMission', currentMissionInstance, dummyCallback);
+        redisClient.zadd('missions', now, currentMissionInstance, dummyCallback);
+    });
 
     cb && cb(null, 201);
 }

@@ -18,9 +18,10 @@ function updateLiveStatus(playerName: string, playerInfo: PlayerInfo.PlayerInfo)
     liveStatus[playerName] = playerInfo.add(liveStatus[playerName] || null);
 }
 
-var dummyCallback = function (err: Error, data) {
+var dummyCallback = function (err: Error, data?: any) {
     if (err) {
         console.log(err);
+        console.log(data);
     }
 };
 
@@ -31,7 +32,7 @@ function getTimestampNow(): number {
 }
 
 function getMissionInstanceName(missionName: string, timestamp: number): string {
-    return sprintf('%s:%s ', (new Date()).setTime(timestamp * 1000), missionName.trim());
+    return sprintf('%s:%s', (new Date()).setTime(timestamp * 1000), missionName.trim());
 }
 
 export function getCurrentMission(cb: AsyncResultCallback<string>) {
@@ -59,7 +60,7 @@ export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
             cb(err, false);
             return;
         }
-        redisClient.hget(sprintf('mission:%s', missionInstanceName), 'is_streamable', function (err: Error, data) {
+        redisClient.hget(sprintf('mission:%s', missionInstanceName), 'is_streamable', function (err: Error, data: string) {
             cb(err, data === '1');
         });
     });
@@ -67,6 +68,10 @@ export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
 
 export function getAllLivePlayerData() {
     return liveStatus;
+}
+
+export function getAllMissions(cb: AsyncResultCallback<Array<string>>) {
+    redisClient.zrevrange('missions', 0, 1000, cb);
 }
 
 export function getAllPlayerData(missionInstanceName: string, timestamp: number, cb: AsyncResultCallback<Array<PlayerInfo.PlayerInfo>>) {
@@ -124,7 +129,6 @@ export function missionStart(missionname: string, worldname: string, cb?: AsyncR
 }
 
 export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<any>) {
-    var now = getTimestampNow();
     getCurrentMission(function (err: Error, missionName: string) {
         redisClient.hmset(
             sprintf('mission:%s', missionName),

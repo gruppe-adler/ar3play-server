@@ -34,8 +34,8 @@ function registerAll() {
         callback(null, new Date().toString());
     });
 
-    rpc.register('missionStart', function (missionName: string, callback: Function) {
-        persist.missionStart(missionName);
+    rpc.register('missionStart', function (missionName: string, worldname: string, callback: Function) {
+        persist.missionStart(missionName, worldname);
         callback(null, 201);
     });
 
@@ -59,7 +59,9 @@ function registerAll() {
     });
 
     rpc.register('setPlayerSide', function (playerName: string, side: string, cb) {
-        persist.setPlayerSide(playerName, PlayerInfo.Side.fromGameSide(side), cb);
+        persist.setPlayerSide(playerName, PlayerInfo.Side.fromGameSide(side));
+
+        cb && cb(null, 201);
     });
 
     rpc.register('setPlayerStatus', function (playerName: string, status: string, callback) {

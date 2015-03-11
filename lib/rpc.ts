@@ -44,8 +44,8 @@ function registerAll() {
         callback(null, 201);
     });
 
-    rpc.register('setIsPrivate', function (isPrivate: boolean, cb: Function) {
-        persist.setIsPrivate(isPrivate);
+    rpc.register('setIsStreamable', function (isStreamable: boolean, cb: Function) {
+        persist.setIsStreamable(isStreamable);
         cb(null, 201);
     });
 

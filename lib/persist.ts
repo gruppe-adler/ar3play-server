@@ -54,8 +54,8 @@ function getAllPlayers(missionName: string, cb: Function) {
     redisClient.smembers(sprintf('mission:%s:players', missionName), cb);
 }
 
-export function getIsPrivate(missionName: string, cb: AsyncResultCallback<boolean>) {
-    redisClient.hget(sprintf('mission:%s', missionName), 'is_private', function (err: Error, data) {
+export function getIsStreamable(missionName: string, cb: AsyncResultCallback<boolean>) {
+    redisClient.hget(sprintf('mission:%s', missionName), 'is_streamable', function (err: Error, data) {
         cb(err, data === '1');
     });
 }
@@ -107,11 +107,11 @@ export function missionStart(name: string, cb?: AsyncResultCallback<any>) {
     cb && cb(null, 201);
 }
 
-export function setIsPrivate(isPrivate: boolean, cb?: AsyncResultCallback<any>) {
+export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     getCurrentMission(function (err: Error, missionName: string) {
         redisClient.hmset(sprintf('mission:%s', missionName), {
-            is_private: isPrivate ? '1' : '0',
+            is_streamable: isStreamable ? '1' : '0',
             starttime: now
         }, dummyCallback);
     });

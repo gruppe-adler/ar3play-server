@@ -13,15 +13,15 @@ http.createServer(function (req, res) {
         res.end();
         return;
     }
-    persist.getIsPrivate('empty', function (error, isPrivate) {
+    persist.getIsStreamable('empty', function (error, isStreamable) {
         var statusCode = 500, result = {};
         if (!error) {
             statusCode = 200;
-            if (isPrivate) {
-                statusCode = 403;
+            if (isStreamable) {
+                result = persist.getAllLivePlayerData();
             }
             else {
-                result = persist.getAllLivePlayerData();
+                statusCode = 403;
             }
         }
         else {

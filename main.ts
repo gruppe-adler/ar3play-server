@@ -18,16 +18,16 @@ http.createServer(function (req, res) {
         return;
     }
 
-    persist.getIsPrivate('empty', function (error: Error, isPrivate: boolean) {
+    persist.getIsStreamable('empty', function (error: Error, isStreamable: boolean) {
         var
             statusCode = 500,
             result = {};
         if (!error) {
             statusCode = 200;
-            if (isPrivate) {
-                statusCode = 403;
-            } else {
+            if (isStreamable) {
                 result = persist.getAllLivePlayerData();
+            } else {
+                statusCode = 403;
             }
         } else {
             console.log(error);

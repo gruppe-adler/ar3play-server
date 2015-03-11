@@ -165,7 +165,11 @@ export function setPlayerStatus(playerName: string, status: string, cb?: AsyncRe
 
 export function setPlayerSide(playerName: string, side: string, cb?: AsyncResultCallback<any>) {
     getPlayerKey(playerName, getTimestampNow(), function (playerKey) {
-        redisClient.hset(playerKey, 'side', PlayerInfo.Side.fromGameSide(side), dummyCallback);
+        try {
+            redisClient.hset(playerKey, 'side', PlayerInfo.Side.fromGameSide(side), dummyCallback);
+        } catch (e) {
+            console.log('error setting player ' + playerName + ' side: ' + e.message);
+        }
     });
     cb && cb(null, 201);
 }

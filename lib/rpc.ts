@@ -34,7 +34,22 @@ function registerAll() {
         callback(null, new Date().toString());
     });
 
-    rpc.register('setPosition', function (name, position, callback) {
+    rpc.register('missionStart', function (missionName: string, callback: Function) {
+        persist.missionStart(missionName);
+        callback(null, 201);
+    });
+
+    rpc.register('missionEnd', function (callback: Function) {
+        persist.missionEnd();
+        callback(null, 201);
+    });
+
+    rpc.register('setIsPrivate', function (isPrivate: boolean, cb: Function) {
+        persist.setIsPrivate(isPrivate);
+        cb(null, 201);
+    });
+
+    rpc.register('setPlayerPosition', function (name, position, callback) {
         console.log(name + ': ' + position.map(function (p) {
             return p.toFixed(0);
         }).join('/'));
@@ -43,23 +58,13 @@ function registerAll() {
         callback(null, 201);
     });
 
-    rpc.register('setStatus', function (playerName: string, status: string, callback) {
-        persist.setPlayerStatus(playerName, status);
-        callback(null, 201);
-    });
-
-    rpc.register('missionStart', function (missionName: string, callback: Function) {
-        persist.setMissionName(missionName);
-        callback(null, 201);
-    });
-
-    rpc.register('setPrivate', function (isPrivate: boolean, cb: Function) {
-        persist.setIsPrivate(isPrivate);
-        cb(null, 201);
-    });
-
     rpc.register('setPlayerSide', function (playerName: string, side: string, cb) {
         persist.setPlayerSide(playerName, PlayerInfo.Side.fromGameSide(side), cb);
+    });
+
+    rpc.register('setPlayerStatus', function (playerName: string, status: string, callback) {
+        persist.setPlayerStatus(playerName, status);
+        callback(null, 201);
     });
 
     rpc.listen("::1", 5555);

@@ -8,7 +8,7 @@ export function init() {
 
     var dummyPos = new PlayerInfo.Point(2000, 1684);
 
-    persist.setMissionName('dummyMission');
+    persist.missionStart('dummyMission');
     persist.setIsPrivate(false);
     persist.setPlayerData('refZeroZero', new PlayerInfo.PlayerInfo(new PlayerInfo.Point(0, 0), 'civ'));
     persist.setPlayerData('refOneOne', new PlayerInfo.PlayerInfo(new PlayerInfo.Point(1000, 1000), 'civ'));

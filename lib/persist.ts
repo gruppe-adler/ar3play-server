@@ -34,6 +34,7 @@ function getMissionInstanceName(missionName: string, timestamp: number): string 
     return sprintf('%s: %s ', (new Date()).setTime(timestamp * 1000), missionName);
 }
 
+
 export function getCurrentMission(cb: AsyncResultCallback<string>) {
     if (currentMission) {
         cb(null, currentMission);
@@ -53,25 +54,51 @@ function getAllPlayers(missionName: string, cb: Function) {
     redisClient.smembers(sprintf('mission:%s:players', missionName), cb);
 }
 
-export function init(_redis: redis.RedisClient) {
-    redisClient = _redis;
-}
-
 export function getIsPrivate(missionName: string, cb: AsyncResultCallback<boolean>) {
     redisClient.hget(sprintf('mission:%s', missionName), 'is_private', function (err: Error, data) {
         cb(err, data === '1');
     });
 }
 
-export function setIsPrivate(isPrivate: boolean, cb?: AsyncResultCallback<any>) {
+export function getAllLivePlayerData() {
+    return liveStatus;
+}
+
+export function getAllPlayerData(missionName: string, timestamp: number, cb: AsyncResultCallback<Array<PlayerInfo.PlayerInfo>>) {
+
+    getAllPlayers(missionName, function (err: Error, playerNames: string[]) {
+        var getPlayerData = function (playerName: string, cb: Function) {
+            getPlayerKey(playerName, timestamp, function (err, playerKey: string) {
+                redisClient.hgetall(playerKey, function (err: Error, data) {
+                    var player = new PlayerInfo.PlayerInfo(new PlayerInfo.Point(data.x, data.y), data.side, data.status);
+                    cb(err, player);
+                });
+
+            });
+        };
+        async.map(playerNames, getPlayerData, function (err: Error, playerData: Array<PlayerInfo.PlayerInfo>) {
+            cb(err, playerData);
+        });
+    });
+}
+
+
+export function init(_redis: redis.RedisClient) {
+    redisClient = _redis;
+}
+
+export function missionEnd(cb?: AsyncResultCallback<any>) {
+    var now = getTimestampNow();
     getCurrentMission(function (err: Error, missionName: string) {
-        redisClient.hset('mission: ' + missionName, 'is_private', isPrivate ? '1' : '0', dummyCallback);
+        redisClient.hset(sprintf('mission:%s', missionName), 'endtime', now);
+        redisClient.set('currentMission', 'empty', dummyCallback);
+        currentMission = 'empty';
     });
 
     cb && cb(null, 201);
 }
 
-export function setMissionName(name: string, cb?: AsyncResultCallback<any>) {
+export function missionStart(name: string, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     var currentMissionInstance = getMissionInstanceName(name, now);
     redisClient.set('currentMission', currentMissionInstance, dummyCallback);
@@ -80,9 +107,18 @@ export function setMissionName(name: string, cb?: AsyncResultCallback<any>) {
     cb && cb(null, 201);
 }
 
-export function getAllLivePlayerData() {
-    return liveStatus;
+export function setIsPrivate(isPrivate: boolean, cb?: AsyncResultCallback<any>) {
+    var now = getTimestampNow();
+    getCurrentMission(function (err: Error, missionName: string) {
+        redisClient.hmset(sprintf('mission:%s', missionName), {
+            is_private: isPrivate ? '1' : '0',
+            starttime: now
+        }, dummyCallback);
+    });
+
+    cb && cb(null, 201);
 }
+
 
 export function setPlayerPosition(playerName, position: PlayerInfo.Point, cb?: AsyncResultCallback<any>) {
     getPlayerKey(playerName, getTimestampNow(), function (error: Error, playerKey: string) {
@@ -118,22 +154,4 @@ export function setPlayerSide(playerName: string, side: string, cb?: AsyncResult
         redisClient.hset(playerKey, 'side', PlayerInfo.Side.fromGameSide(side), dummyCallback);
     });
     cb && cb(null, 201);
-}
-
-export function getAllPlayerData(missionName: string, timestamp: number, cb: AsyncResultCallback<Array<PlayerInfo.PlayerInfo>>) {
-
-    getAllPlayers(missionName, function (err: Error, playerNames: string[]) {
-        var getPlayerData = function (playerName: string, cb: Function) {
-            getPlayerKey(playerName, timestamp, function (err, playerKey: string) {
-                redisClient.hgetall(playerKey, function (err: Error, data) {
-                    var player = new PlayerInfo.PlayerInfo(new PlayerInfo.Point(data.x, data.y), data.side, data.status);
-                    cb(err, player);
-                });
-
-            });
-        };
-        async.map(playerNames, getPlayerData, function (err: Error, playerData: Array<PlayerInfo.PlayerInfo>) {
-            cb(err, playerData);
-        });
-    });
 }

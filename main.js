@@ -13,7 +13,7 @@ http.createServer(function (req, res) {
         res.end();
         return;
     }
-    persist.getIsStreamable('empty', function (error, isStreamable) {
+    persist.getIsStreamable(function (error, isStreamable) {
         var statusCode = 500, result = {};
         if (!error) {
             statusCode = 200;

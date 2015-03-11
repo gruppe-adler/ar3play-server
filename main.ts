@@ -18,7 +18,7 @@ http.createServer(function (req, res) {
         return;
     }
 
-    persist.getIsStreamable('empty', function (error: Error, isStreamable: boolean) {
+    persist.getIsStreamable(function (error: Error, isStreamable: boolean) {
         var
             statusCode = 500,
             result = {};

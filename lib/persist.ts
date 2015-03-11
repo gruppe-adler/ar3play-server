@@ -31,9 +31,8 @@ function getTimestampNow(): number {
 }
 
 function getMissionInstanceName(missionName: string, timestamp: number): string {
-    return sprintf('%s: %s ', (new Date()).setTime(timestamp * 1000), missionName);
+    return sprintf('%s:%s ', (new Date()).setTime(timestamp * 1000), missionName.trim());
 }
-
 
 export function getCurrentMission(cb: AsyncResultCallback<string>) {
     if (currentMission) {
@@ -45,18 +44,20 @@ export function getCurrentMission(cb: AsyncResultCallback<string>) {
 }
 
 function getPlayerKey(playerName: string, timestamp: number, cb: AsyncResultCallback<string>) {
-    getCurrentMission(function (err: Error, missionName: string) {
-        cb(err, sprintf('mission:%s:player:%s:ts:%d', missionName, playerName, timestamp));
+    getCurrentMission(function (err: Error, missionInstanceName: string) {
+        cb(err, sprintf('mission:%s:player:%s:ts:%d', missionInstanceName, playerName, timestamp));
     });
 }
 
-function getAllPlayers(missionName: string, cb: Function) {
-    redisClient.smembers(sprintf('mission:%s:players', missionName), cb);
+function getAllPlayers(missionInstanceName: string, cb: Function) {
+    redisClient.smembers(sprintf('mission:%s:players', missionInstanceName), cb);
 }
 
-export function getIsStreamable(missionName: string, cb: AsyncResultCallback<boolean>) {
-    redisClient.hget(sprintf('mission:%s', missionName), 'is_streamable', function (err: Error, data) {
-        cb(err, data === '1');
+export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
+    getCurrentMission(function (missionInstanceName) {
+        redisClient.hget(sprintf('mission:%s', missionInstanceName), 'is_streamable', function (err: Error, data) {
+            cb(err, data === '1');
+        });
     });
 }
 
@@ -64,9 +65,9 @@ export function getAllLivePlayerData() {
     return liveStatus;
 }
 
-export function getAllPlayerData(missionName: string, timestamp: number, cb: AsyncResultCallback<Array<PlayerInfo.PlayerInfo>>) {
+export function getAllPlayerData(missionInstanceName: string, timestamp: number, cb: AsyncResultCallback<Array<PlayerInfo.PlayerInfo>>) {
 
-    getAllPlayers(missionName, function (err: Error, playerNames: string[]) {
+    getAllPlayers(missionInstanceName, function (err: Error, playerNames: string[]) {
         var getPlayerData = function (playerName: string, cb: Function) {
             getPlayerKey(playerName, timestamp, function (err, playerKey: string) {
                 redisClient.hgetall(playerKey, function (err: Error, data) {

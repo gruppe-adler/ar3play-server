@@ -22,6 +22,15 @@
     },
     "async/async.d.ts": {
       "commit": "3b2ed809b9e8f7dc4fcc1d80199129a0b73fb277"
+    },
+    "restify/restify.d.ts": {
+      "commit": "c594427c40354eae9dc618c50dc1c3d83da477b5"
+    },
+    "bunyan/bunyan.d.ts": {
+      "commit": "c594427c40354eae9dc618c50dc1c3d83da477b5"
+    },
+    "hashmap/hashmap.d.ts": {
+      "commit": "a0ee360d4751aa3fc928159d618442e208fd8b23"
     }
   }
 }

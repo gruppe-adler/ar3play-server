@@ -14,7 +14,7 @@ export class PlayerInfo {
         this.side = side;
         this.status = status;
     }
-    add(playerInfo?: PlayerInfo): PlayerInfo {
+    augment(playerInfo?: PlayerInfo): PlayerInfo {
         if (!playerInfo) {
             return this;
         }

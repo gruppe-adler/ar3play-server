@@ -3,12 +3,18 @@
 import underscore = require('underscore');
 import persist = require('./persist');
 import PlayerInfo = require('./PlayerInfo');
+import bunyan = require('bunyan');
 
 var
-    rpc = require('sock-rpc');
+    rpc = require('sock-rpc'),
+    logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
-export function init() {
+
+export function init(port) {
     registerAll();
+
+    rpc.listen("::1", port);
+    logger.info('listening for RPC calls on port ' + port);
 }
 
 function registerAll() {
@@ -21,7 +27,7 @@ function registerAll() {
         var args = Array.prototype.slice.call(arguments, 0);
         var callback = args.pop();
 
-        console.log(args);
+        logger.debug(args);
 
         callback(null, args);
     });
@@ -30,7 +36,7 @@ function registerAll() {
      *  Get date (no arguments)
      */
     rpc.register('getDate', function (callback) {
-        console.log('getDate called :)');
+        logger.debug('getDate called :)');
         callback(null, new Date().toString());
     });
 
@@ -69,5 +75,4 @@ function registerAll() {
         callback(null, 201);
     });
 
-    rpc.listen("::1", 5555);
 }

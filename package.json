@@ -7,6 +7,9 @@
     "typescript-require": "~0.2.8",
     "typescript": "~1.4.1",
     "sprintf": "~0.1.5",
-    "async": "~0.9.0"
+    "async": "~0.9.0",
+    "bunyan": "~1.3.4",
+    "restify": "~3.0.0",
+    "hashmap": "~2.0.1"
   }
 }

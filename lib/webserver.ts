@@ -5,8 +5,6 @@ import bunyan = require('bunyan');
 import persist = require('./persist');
 import PlayerInfo = require('./PlayerInfo');
 
-
-
 var
     logger = bunyan.createLogger({name: __filename.split('/').pop()}),
     server = restify.createServer({log: bunyan.createLogger({name: 'restify'})});
@@ -131,12 +129,15 @@ function setMissionId(req: restify.Request, res: restify.Response, next: restify
 }
 */
 
+function sendCorsHeaders(req: restify.Request, res: restify.Response, next: restify.Next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    next();
+}
+
+server.use(sendCorsHeaders);
 server.get('/missions', returnAllMissions);
 server.get('/currentMission', missionAuthentication, returnCurrentMission);
 server.get('/mission/:id/changes', missionAuthentication, getMissionChanges);
 server.get('/mission/:id', missionAuthentication, getMissionDetails);
-/*res.setHeader('Access-Control-Allow-Origin', '*');
- res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
- res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
- */
-

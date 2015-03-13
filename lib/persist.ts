@@ -111,10 +111,8 @@ export function getMissionChanges(
     to: number,
     cb: AsyncResultCallback<HashMap<string, PlayerInfo.PlayerInfo>>
 ) {
-logger.debug('gap1');
     getAllPlayers(missionInstanceName, function (err: Error, playerNames: string[]) {
         var getPlayerData = function (playerName: string, cb: AsyncResultCallback<PlayerInfo.PlayerInfo>) {
-            logger.debug('gap2');
             var
                 cnt,
                 timestamps: Array<number> = [],
@@ -132,8 +130,6 @@ logger.debug('gap1');
                 timestamps.push(cnt);
             }
 
-            logger.debug('gap2-1 + ' + timestamps.length);
-            logger.debug('getter: ' + getter.toString());
             async.map(timestamps, getter, function (error: Error, results: Array<PlayerInfo.PlayerInfo>) {
                 var reducedPlayerInfo: PlayerInfo.PlayerInfo = null;
                 logger.debug('gap3');
@@ -145,7 +141,6 @@ logger.debug('gap1');
 
                 cb(error, reducedPlayerInfo);
             });
-            logger.debug('gap2-2');
         };
 
         async.map(playerNames, getPlayerData, function (err: Error, playerData: Array<PlayerInfo.PlayerInfo>) {
@@ -161,7 +156,20 @@ logger.debug('gap1');
 }
 
 export function getMissionDetails(missionInstanceName: string, cb: AsyncResultCallback<Object>) {
-    redisClient.hgetall(sprintf('mission:%s', missionInstanceName), cb);
+    redisClient.hgetall(sprintf('mission:%s', missionInstanceName), function (error: Error, data: any) {
+        if (data) {
+            data.is_streamable = data.is_streamable === '1';
+
+            if (data.starttime) {
+                data.starttime = parseInt(data.starttime, 10);
+            }
+
+            if (data.endtime) {
+                data.endtime = parseInt(data.endtime, 10);
+            }
+        }
+        cb(error, data);
+    });
 }
 
 export function init(_redis: redis.RedisClient) {

@@ -9,6 +9,7 @@ var
     rpc = require('sock-rpc'),
     logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
+logger.level('debug');
 
 export function init(port) {
     registerAll();
@@ -46,6 +47,7 @@ function registerAll() {
     });
 
     rpc.register('missionEnd', function (callback: Function) {
+        console.log('missionEnd');
         persist.missionEnd();
         callback(null, 201);
     });
@@ -65,12 +67,14 @@ function registerAll() {
     });
 
     rpc.register('setPlayerSide', function (playerName: string, side: string, cb) {
+        logger.debug('playerside ' + playerName + ': ' + side);
         persist.setPlayerSide(playerName, PlayerInfo.Side.fromGameSide(side));
 
         cb && cb(null, 201);
     });
 
     rpc.register('setPlayerStatus', function (playerName: string, status: string, callback) {
+        logger.debug('playerside ' + playerName + ': ' + status);
         persist.setPlayerStatus(playerName, status);
         callback(null, 201);
     });

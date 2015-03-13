@@ -16,7 +16,7 @@ var liveStatus: Object = {
     // ...
 };
 
-logger.level("debug");
+logger.level("info");
 
 function updateLiveStatus(playerName: string, playerInfo: PlayerInfo.PlayerInfo) {
     liveStatus[playerName] = playerInfo.augment(liveStatus[playerName] || null);

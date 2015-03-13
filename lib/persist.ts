@@ -41,8 +41,9 @@ function createMissionInstanceName(missionName: string, timestamp: number): stri
 
 export function getCurrentMission(cb: AsyncResultCallback<string>) {
     if (currentMission) {
-        cb(null, currentMission);
+        return cb(null, currentMission);
     }
+
     redisClient.get('currentMission', function (err: Error, missionName: string) {
        cb(err, missionName || 'empty');
     });

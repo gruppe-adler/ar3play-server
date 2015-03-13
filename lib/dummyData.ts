@@ -13,6 +13,9 @@ export function init() {
     persist.setPlayerData('refZeroZero', new PlayerInfo.PlayerInfo(new PlayerInfo.Point(0, 0), 'civ'));
     persist.setPlayerData('refOneOne', new PlayerInfo.PlayerInfo(new PlayerInfo.Point(1000, 1000), 'civ'));
     persist.setPlayerData('dummyOpfor', new PlayerInfo.PlayerInfo(dummyPos, 'opfor'));
+    persist.setPlayerSide('dummyOpfor', 'opfor');
+    persist.setPlayerSide('refZeroZero', 'ind');
+    persist.setPlayerSide('refOneOne', 'civ');
 
     setInterval(function () {
         dummyPos.x = dummyPos.x + 1;

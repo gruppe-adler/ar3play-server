@@ -74,7 +74,7 @@ function registerAll() {
     });
 
     rpc.register('setPlayerStatus', function (playerName: string, status: string, callback) {
-        logger.debug('playerside ' + playerName + ': ' + status);
+        logger.debug('playerstatus ' + playerName + ': ' + status);
         persist.setPlayerStatus(playerName, status);
         callback(null, 201);
     });

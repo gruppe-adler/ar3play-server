@@ -42,7 +42,9 @@ function returnAllMissions(req: restify.Request, res: restify.Response) {
 }
 
 function returnCurrentMission(req: restify.Request, res: restify.Response) {
-    res.send(200, JSON.stringify(persist.getAllLivePlayerData()));
+    persist.getCurrentMission(function (error: Error, missionInstancename: string) {
+        res.send(200, missionInstancename);
+    });
 }
 
 function getMissionDetails(req: restify.Request, res: restify.Response) {
@@ -111,23 +113,6 @@ function missionAuthentication(req: restify.Request, res: restify.Response, next
         });
     });
 }
-/*
-function setMissionId(req: restify.Request, res: restify.Response, next: restify.Next) {
-    if (req.params.id) {
-        return next();
-    }
-
-    persist.getCurrentMission(function (error: Error, missionId: string) {
-        if (error) {
-            logger.error(error);
-            return res.send(500, 'couldnt current mission');
-        }
-
-        req.params.id = missionId;
-        next();
-    });
-}
-*/
 
 function sendCorsHeaders(req: restify.Request, res: restify.Response, next: restify.Next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -138,6 +123,6 @@ function sendCorsHeaders(req: restify.Request, res: restify.Response, next: rest
 
 server.use(sendCorsHeaders);
 server.get('/missions', returnAllMissions);
-server.get('/currentMission', missionAuthentication, returnCurrentMission);
+server.get('/currentMission', returnCurrentMission);
 server.get('/mission/:id/changes', missionAuthentication, getMissionChanges);
-server.get('/mission/:id', missionAuthentication, getMissionDetails);
+server.get('/mission/:id', getMissionDetails);

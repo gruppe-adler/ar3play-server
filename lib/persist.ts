@@ -11,16 +11,9 @@ var redisClient: redis.RedisClient = redis.createClient();
 var currentMission: string = '';
 var sprintf = sf.sprintf;
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
-var liveStatus: Object = {
-    //playerName: PlayerInfo,
-    // ...
-};
+
 
 logger.level("info");
-
-function updateLiveStatus(playerName: string, playerInfo: PlayerInfo.PlayerInfo) {
-    liveStatus[playerName] = playerInfo.augment(liveStatus[playerName] || null);
-}
 
 var dummyCallback = function (err: Error, data?: any) {
     if (err) {
@@ -36,7 +29,7 @@ function getTimestampNow(): number {
 }
 
 function createMissionInstanceName(missionName: string, timestamp: number): string {
-    return sprintf('%s:%s', timestamp, missionName.trim());
+    return sprintf('%s-%s', timestamp, missionName.trim());
 }
 
 export function getCurrentMission(cb: AsyncResultCallback<string>) {
@@ -100,10 +93,6 @@ export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
             cb(err, data === '1');
         });
     });
-}
-
-export function getAllLivePlayerData() {
-    return liveStatus;
 }
 
 export function getAllMissions(cb: AsyncResultCallback<Array<string>>) {
@@ -194,12 +183,12 @@ export function missionEnd(cb?: AsyncResultCallback<any>) {
     });
 }
 
-export function missionStart(missionname: string, worldname: string, cb?: AsyncResultCallback<any>) {
+export function missionStart(realMissionName: string, worldname: string, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
-    var currentMissionInstance = createMissionInstanceName(missionname, now);
+    var currentMissionInstance = createMissionInstanceName(realMissionName, now);
 
     missionEnd(function () {
-        currentMission = missionname;
+        currentMission = currentMissionInstance;
         redisClient.set('currentMission', currentMissionInstance, dummyCallback);
         redisClient.zadd('missions', now, currentMissionInstance, dummyCallback);
         redisClient.hmset(
@@ -235,7 +224,6 @@ export function setPlayerPosition(playerName, position: PlayerInfo.Point, cb?: A
         redisClient.hset(playerKey, 'x', position.x, dummyCallback);
         redisClient.hset(playerKey, 'y', position.y, dummyCallback);
     });
-    updateLiveStatus(playerName, new PlayerInfo.PlayerInfo(position));
 
     cb && cb(null, 201);
 }
@@ -253,7 +241,6 @@ export function setPlayerData(playerName: string, player: PlayerInfo.PlayerInfo,
         }
         redisClient.hmset(playerKey, dataForRedis, dummyCallback);
     });
-    updateLiveStatus(playerName, player);
     cb && cb(null, 201);
 }
 
@@ -263,7 +250,6 @@ export function setPlayerStatus(playerName: string, status: string, cb?: AsyncRe
     });
     var playerInfo = new PlayerInfo.PlayerInfo();
     playerInfo.status = status;
-    updateLiveStatus(playerName, playerInfo);
     cb && cb(null, 201);
 }
 

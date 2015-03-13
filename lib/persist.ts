@@ -55,12 +55,12 @@ function getPlayerKey(missionInstanceName: string, playerName: string, timestamp
 function getPlayerKeyLive(playerName: string, timestamp: number, cb: AsyncResultCallback<string>) {
     getCurrentMission(function (err: Error, missionInstanceName: string) {
         redisClient.sadd(sprintf('mission:%s:players', missionInstanceName), playerName, dummyCallback);
-        cb(err, getPlayerKey(missionInstanceName, playerName, timestamp));
+        var playerKey = getPlayerKey(missionInstanceName, playerName, timestamp);
+        cb(err, playerKey);
     });
 }
 
 function getPlayerDataAt(playerKey, cb: AsyncResultCallback<PlayerInfo.PlayerInfo>) {
-logger.debug('playerkey: ' + playerKey);
     redisClient.hgetall(playerKey, function (error: Error, playerData: any) {
         var playerInfo: PlayerInfo.PlayerInfo;
         if (error) {
@@ -257,7 +257,7 @@ export function setPlayerData(playerName: string, player: PlayerInfo.PlayerInfo,
 }
 
 export function setPlayerStatus(playerName: string, status: string, cb?: AsyncResultCallback<any>) {
-    getPlayerKeyLive(playerName, getTimestampNow(), function (playerKey) {
+    getPlayerKeyLive(playerName, getTimestampNow(), function (error: Error, playerKey: string) {
         redisClient.hset(playerKey, 'status', status, dummyCallback);
     });
     var playerInfo = new PlayerInfo.PlayerInfo();
@@ -267,7 +267,7 @@ export function setPlayerStatus(playerName: string, status: string, cb?: AsyncRe
 }
 
 export function setPlayerSide(playerName: string, side: string, cb?: AsyncResultCallback<any>) {
-    getPlayerKeyLive(playerName, getTimestampNow(), function (playerKey) {
+    getPlayerKeyLive(playerName, getTimestampNow(), function (error: Error, playerKey: string) {
         try {
             redisClient.hset(playerKey, 'side', side, dummyCallback);
         } catch (e) {

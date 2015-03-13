@@ -32,7 +32,7 @@ function registerAll() {
      *  echo(...,callback);
      */
     rpc.register('echo', function () {
-
+        watchForEnd();
         var args = Array.prototype.slice.call(arguments, 0);
         var callback = args.pop();
 

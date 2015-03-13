@@ -52,6 +52,7 @@ function registerAll() {
 
     rpc.register('missionStart', function (missionName: string, worldname: string, callback: Function) {
         watchForEnd();
+        logger.info('mission started: ' + missionName);
         persist.missionStart(missionName, worldname);
         callback(null, 201);
     });

@@ -185,12 +185,12 @@ export function init(_redis: redis.RedisClient) {
 export function missionEnd(cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     getCurrentMission(function (err: Error, missionName: string) {
-        redisClient.hset(sprintf('mission:%s', missionName), 'endtime', now);
-        redisClient.set('currentMission', 'empty', dummyCallback);
+        redisClient.hset(sprintf('mission:%s', missionName), 'endtime', now, dummyCallback);
         currentMission = 'empty';
+        redisClient.set('currentMission', 'empty', function (err: Error) {
+            cb && cb(err, 201);
+        });
     });
-
-    cb && cb(null, 201);
 }
 
 export function missionStart(missionname: string, worldname: string, cb?: AsyncResultCallback<any>) {

@@ -49,7 +49,7 @@ export function getCurrentMission(cb: AsyncResultCallback<string>) {
 }
 
 function getPlayerKey(missionInstanceName: string, playerName: string, timestamp: number): string {
-    return sprintf('mission:%s:player:%s:ts:%d', missionInstanceName, playerName, timestamp);
+    return sprintf('mission:%s,player:%s,ts:%d', missionInstanceName, playerName, timestamp);
 }
 
 function getPlayerKeyLive(playerName: string, timestamp: number, cb: AsyncResultCallback<string>) {
@@ -60,23 +60,27 @@ function getPlayerKeyLive(playerName: string, timestamp: number, cb: AsyncResult
 }
 
 function getPlayerDataAt(playerKey, cb: AsyncResultCallback<PlayerInfo.PlayerInfo>) {
-    logger.debug('gap2-2-1 getplayerdataat 1111');
-
+logger.debug('playerkey: ' + playerKey);
     redisClient.hgetall(playerKey, function (error: Error, playerData: any) {
-        var playerInfo = new PlayerInfo.PlayerInfo();
+        var playerInfo: PlayerInfo.PlayerInfo;
         if (error) {
             logger.error(error);
             return cb(error, playerInfo);
         }
         if (playerData) {
+            playerInfo = new PlayerInfo.PlayerInfo();
             if (playerData.x) {
                 playerInfo.position = new PlayerInfo.Point(playerData.x, playerData.y);
             }
             playerInfo.side = playerData.side;
             playerInfo.status = playerData.status;
+
+            logger.debug('got playerdata, x: ' + playerData.x);
+        } else {
+            logger.debug('got no playerdata');
         }
 
-        logger.debug('gap2-2-1 getplayerdataat hgetall callback');
+
         cb(error, playerInfo);
     });
 }
@@ -120,7 +124,6 @@ export function getMissionChanges(
                     timestamp: number,
                     cb: AsyncResultCallback<PlayerInfo.PlayerInfo>
                 ) {
-                    logger.debug('gap2-1-2');
                     getPlayerDataAt(getPlayerKey(missionInstanceName, playerName, timestamp), cb);
                 };
 
@@ -132,11 +135,14 @@ export function getMissionChanges(
 
             async.map(timestamps, getter, function (error: Error, results: Array<PlayerInfo.PlayerInfo>) {
                 var reducedPlayerInfo: PlayerInfo.PlayerInfo = null;
-                logger.debug('gap3');
+
                 if (Array.isArray(results)) {
                     reducedPlayerInfo = results.reduce(function (prev: PlayerInfo.PlayerInfo, cur: PlayerInfo.PlayerInfo): PlayerInfo.PlayerInfo {
+                        if (!prev) {
+                            return cur;
+                        }
                         return prev.augment(cur);
-                    }, new PlayerInfo.PlayerInfo());
+                    }, null);
                 }
 
                 cb(error, reducedPlayerInfo);
@@ -236,7 +242,15 @@ export function setPlayerPosition(playerName, position: PlayerInfo.Point, cb?: A
 export function setPlayerData(playerName: string, player: PlayerInfo.PlayerInfo, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     getPlayerKeyLive(playerName, now, function (error: Error, playerKey: string) {
-        redisClient.hmset(playerKey, {x: player.position.x, y: player.position.y, side: player.side, status: player.status}, dummyCallback);
+        var dataForRedis: any = {
+            side: player.side,
+            status: player.status
+        };
+        if (player.position) {
+            dataForRedis.x = player.position.x;
+            dataForRedis.y = player.position.y;
+        }
+        redisClient.hmset(playerKey, dataForRedis, dummyCallback);
     });
     updateLiveStatus(playerName, player);
     cb && cb(null, 201);

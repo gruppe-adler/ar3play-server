@@ -1,14 +1,26 @@
 
 export class Point {
+    x: number;
+    y: number;
+
     constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
     }
-    x: number;
-    y: number;
+    toJSON(): any {
+        return {
+            x: this.x,
+            y: this.y
+        }
+    }
+
 }
 
 export class PlayerInfo {
+    position: Point;
+    side: string;
+    status: string;
+
     constructor(position?: Point, side?: string, status?: string) {
         this.position = position;
         this.side = side;
@@ -30,9 +42,15 @@ export class PlayerInfo {
 
         return playerInfo;
     }
-    position: Point;
-    side: string;
-    status: string;
+    toJSON(): any {
+        var position = null;
+        if (this.position) {
+            position = this.position.toJSON();
+        }
+        return {
+            position: position
+        };
+    }
 }
 
 export class Status {

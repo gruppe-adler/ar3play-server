@@ -43,13 +43,17 @@ export class PlayerInfo {
         return playerInfo;
     }
     toJSON(): any {
-        var position = null;
+        var result: any = {};
         if (this.position) {
-            position = this.position.toJSON();
+            result.position = this.position.toJSON();
         }
-        return {
-            position: position
-        };
+        if (this.status) {
+            result.status = this.status
+        }
+        if (this.side) {
+            result.side = this.side;
+        }
+        return result;
     }
 }
 

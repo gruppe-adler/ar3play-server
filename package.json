@@ -1,5 +1,9 @@
 {
   "name": "arma3-serverstats",
+  "repository": { 
+    "type": "git",
+    "url": "http://github.com/gruppe-adler/ar3play-server.git"
+  },
   "version": "1.0.0",
   "dependencies": {
     "sock-rpc": "1.0.x",

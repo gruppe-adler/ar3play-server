@@ -17,5 +17,8 @@
     "hashmap": "~2.0.1",
     "underscore": "~1.8.2",
     "tsd": "~0.5.7"
+  },
+  "scripts": {
+    "install": "./node_modules/tsd/build/cli.js reinstall --save --override; node_modules/typescript/bin/tsc --module commonjs  ./*.ts */*.ts"
   }
 }

@@ -4,6 +4,7 @@ import restify = require('restify');
 import bunyan = require('bunyan');
 import persist = require('./persist');
 import PlayerInfo = require('./PlayerInfo');
+import Mission = require('./Mission');
 
 var
     logger = bunyan.createLogger({name: __filename.split('/').pop()}),
@@ -36,14 +37,15 @@ export function init(port: number): void {
 }
 
 function returnAllMissions(req: restify.Request, res: restify.Response) {
-    persist.getAllMissions(function (error: Error, missions: Array<string>) {
+    persist.getAllMissions(function (error: Error, missions: Array<Mission.MissionInfo>) {
+
         res.send(missions);
     });
 }
 
 function returnCurrentMission(req: restify.Request, res: restify.Response) {
-    persist.getCurrentMission(function (error: Error, missionInstancename: string) {
-        res.send(200, missionInstancename);
+    persist.getCurrentMission(function (error: Error, instanceId: string) {
+        res.send(200, instanceId);
     });
 }
 
@@ -95,8 +97,8 @@ function getMissionChanges(req: restify.Request, res: restify.Response) {
 }
 
 function missionAuthentication(req: restify.Request, res: restify.Response, next: restify.Next) {
-    persist.getCurrentMission(function (error: Error, missionInstanceName: string) {
-        if (req.params.id && (missionInstanceName !== req.params.id)) { // catch current mission
+    persist.getCurrentMission(function (error: Error, instanceId: string) {
+        if (req.params.id && (instanceId !== req.params.id)) { // catch current mission
             return next();
         }
 

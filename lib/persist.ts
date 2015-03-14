@@ -3,6 +3,7 @@
 import sf = require('sprintf');
 import async = require('async');
 import PlayerInfo = require('./PlayerInfo');
+import Mission = require('./Mission');
 import redis = require('redis');
 import bunyan = require('bunyan');
 
@@ -11,7 +12,6 @@ var redisClient: redis.RedisClient = redis.createClient();
 var currentMission: string = '';
 var sprintf = sf.sprintf;
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
-
 
 logger.level("info");
 
@@ -28,7 +28,7 @@ function getTimestampNow(): number {
     return parseInt(((new Date()).getTime() / 1000).toFixed(0), 10);
 }
 
-function createMissionInstanceName(missionName: string, timestamp: number): string {
+function createMissionInstanceId(missionName: string, timestamp: number): string {
     return sprintf('%s-%s', timestamp, missionName.trim());
 }
 
@@ -42,14 +42,18 @@ export function getCurrentMission(cb: AsyncResultCallback<string>) {
     });
 }
 
-function getPlayerKey(missionInstanceName: string, playerName: string, timestamp: number): string {
-    return sprintf('mission:%s,player:%s,ts:%d', missionInstanceName, playerName, timestamp);
+function getPlayerHASHKey(instanceId: string, playerName: string, timestamp: number): string {
+    return sprintf('mission:%s,player:%s,ts:%d', instanceId, playerName, timestamp);
+}
+
+function getMissionHASHKey(instanceId: string): string {
+    return sprintf('mission:%s', instanceId);
 }
 
 function getPlayerKeyLive(playerName: string, timestamp: number, cb: AsyncResultCallback<string>) {
-    getCurrentMission(function (err: Error, missionInstanceName: string) {
-        redisClient.sadd(sprintf('mission:%s:players', missionInstanceName), playerName, dummyCallback);
-        var playerKey = getPlayerKey(missionInstanceName, playerName, timestamp);
+    getCurrentMission(function (err: Error, instanceId: string) {
+        redisClient.sadd(sprintf('mission:%s:players', instanceId), playerName, dummyCallback);
+        var playerKey = getPlayerHASHKey(instanceId, playerName, timestamp);
         cb(err, playerKey);
     });
 }
@@ -79,33 +83,35 @@ function getPlayerDataAt(playerKey, cb: AsyncResultCallback<PlayerInfo.PlayerInf
     });
 }
 
-function getAllPlayers(missionInstanceName: string, cb: Function) {
-    redisClient.smembers(sprintf('mission:%s:players', missionInstanceName), cb);
+function getAllPlayers(instanceId: string, cb: Function) {
+    redisClient.smembers(sprintf('mission:%s:players', instanceId), cb);
 }
 
 export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
-    getCurrentMission(function (err: Error, missionInstanceName: string) {
+    getCurrentMission(function (err: Error, instanceId: string) {
         if (err) {
             cb(err, false);
             return;
         }
-        redisClient.hget(sprintf('mission:%s', missionInstanceName), 'is_streamable', function (err: Error, data: string) {
+        redisClient.hget(getMissionHASHKey(instanceId), 'is_streamable', function (err: Error, data: string) {
             cb(err, data === '1');
         });
     });
 }
 
-export function getAllMissions(cb: AsyncResultCallback<Array<string>>) {
-    redisClient.zrevrange('missions', 0, 1000, cb);
+export function getAllMissions(cb: AsyncResultCallback<Array<Mission.MissionInfo>>) {
+    redisClient.zrevrange('missions', 0, 1000, function (error: Error, instanceIds: Array<string>) {
+        async.map(instanceIds, getMissionDetails, cb);
+    });
 }
 
 export function getMissionChanges(
-    missionInstanceName: string,
+    instanceId: string,
     from: number,
     to: number,
     cb: AsyncResultCallback<HashMap<string, PlayerInfo.PlayerInfo>>
 ) {
-    getAllPlayers(missionInstanceName, function (err: Error, playerNames: string[]) {
+    getAllPlayers(instanceId, function (err: Error, playerNames: string[]) {
         var getPlayerData = function (playerName: string, cb: AsyncResultCallback<PlayerInfo.PlayerInfo>) {
             var
                 cnt,
@@ -114,7 +120,7 @@ export function getMissionChanges(
                     timestamp: number,
                     cb: AsyncResultCallback<PlayerInfo.PlayerInfo>
                 ) {
-                    getPlayerDataAt(getPlayerKey(missionInstanceName, playerName, timestamp), cb);
+                    getPlayerDataAt(getPlayerHASHKey(instanceId, playerName, timestamp), cb);
                 };
 
             // this may seem stupid, but there seems to be a bug where this: (new Array(to - from)).map(function () {return cnt++});
@@ -151,20 +157,23 @@ export function getMissionChanges(
     });
 }
 
-export function getMissionDetails(missionInstanceName: string, cb: AsyncResultCallback<Object>) {
-    redisClient.hgetall(sprintf('mission:%s', missionInstanceName), function (error: Error, data: any) {
+export function getMissionDetails(instanceId: string, cb: AsyncResultCallback<Object>) {
+    redisClient.hgetall(getMissionHASHKey(instanceId), function (error: Error, data: any) {
+        var missionInfo;
         if (data) {
-            data.is_streamable = data.is_streamable === '1';
+            missionInfo = new Mission.MissionInfo(
+                instanceId,
+                data.name,
+                data.worldname,
+                parseInt(data.starttime, 10)
+            );
 
-            if (data.starttime) {
-                data.starttime = parseInt(data.starttime, 10);
-            }
-
+            missionInfo.is_streamable = data.is_streamable === '1';
             if (data.endtime) {
-                data.endtime = parseInt(data.endtime, 10);
+                missionInfo.endtime = parseInt(data.endtime, 10);
             }
         }
-        cb(error, data);
+        cb(error, missionInfo);
     });
 }
 
@@ -175,7 +184,7 @@ export function init(_redis: redis.RedisClient) {
 export function missionEnd(cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     getCurrentMission(function (err: Error, missionName: string) {
-        redisClient.hset(sprintf('mission:%s', missionName), 'endtime', now, dummyCallback);
+        redisClient.hset(getMissionHASHKey(missionName), 'endtime', now, dummyCallback);
         currentMission = 'empty';
         redisClient.set('currentMission', 'empty', function (err: Error) {
             cb && cb(err, 201);
@@ -185,15 +194,16 @@ export function missionEnd(cb?: AsyncResultCallback<any>) {
 
 export function missionStart(realMissionName: string, worldname: string, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
-    var currentMissionInstance = createMissionInstanceName(realMissionName, now);
+    var currentMissionInstance = createMissionInstanceId(realMissionName, now);
 
     missionEnd(function () {
         currentMission = currentMissionInstance;
         redisClient.set('currentMission', currentMissionInstance, dummyCallback);
         redisClient.zadd('missions', now, currentMissionInstance, dummyCallback);
         redisClient.hmset(
-            sprintf('mission:%s', currentMissionInstance),
+            getMissionHASHKey(currentMissionInstance),
             {
+                name: realMissionName,
                 worldname: worldname,
                 starttime: now
             },
@@ -207,7 +217,7 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
 export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<any>) {
     getCurrentMission(function (err: Error, missionName: string) {
         redisClient.hmset(
-            sprintf('mission:%s', missionName),
+            getMissionHASHKey(missionName),
             {
                 is_streamable: isStreamable ? '1' : '0'
             },

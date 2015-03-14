@@ -1,4 +1,5 @@
 *.map
+*.js
 node_modules
 typings
 web/stratis_18022

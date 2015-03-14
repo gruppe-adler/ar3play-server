@@ -9,21 +9,38 @@ var
     rpc = require('sock-rpc'),
     logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
-logger.level('debug');
+logger.level('info');
 
-
-var watchForEnd = _.debounce(function () {
+var keepAlive = _.debounce(function () {
     logger.warn('timeout! declaring mission as ended');
     persist.missionEnd();
-}, 30000);
+}, 45000);
 
+var verify = {
+    str: function (variable: any, errorKey: string) {
+        if (typeof variable !== 'string') {
+            throw new Error('not a string: ' + errorKey);
+        }
+        return this;
+    },
+    arr: function (variable: any, errorKey: string) {
+        if (!Array.isArray(variable)) {
+            throw new Error('not an array: ' + errorKey);
+        }
+        return this;
+    },
+    keepAlive: function () {
+        keepAlive();
+        return this;
+    }
+};
 
 export function init(port) {
     registerAll();
 
     rpc.listen("::1", port);
     logger.info('listening for RPC calls on port ' + port);
-    watchForEnd();
+    keepAlive();
 }
 
 function registerAll() {
@@ -32,7 +49,7 @@ function registerAll() {
      *  echo(...,callback);
      */
     rpc.register('echo', function () {
-        watchForEnd();
+        keepAlive();
         var args = Array.prototype.slice.call(arguments, 0);
         var callback = args.pop();
 
@@ -44,14 +61,14 @@ function registerAll() {
     /**
      *  Get date (no arguments)
      */
-    rpc.register('getDate', function (callback) {
-        watchForEnd();
+    rpc.register('getDate', function (callback: Function) {
+        keepAlive();
         logger.debug('getDate called :)');
         callback(null, new Date().toString());
     });
 
     rpc.register('missionStart', function (missionName: string, worldname: string, callback: Function) {
-        watchForEnd();
+        verify.str(missionName, 'missionName').str(worldname, 'worldname').keepAlive();
         logger.info('mission started: ' + missionName);
         persist.missionStart(missionName, worldname);
         callback(null, 201);
@@ -64,20 +81,23 @@ function registerAll() {
     });
 
     rpc.register('setIsStreamable', function (isStreamable: boolean, cb: Function) {
-        watchForEnd();
+        keepAlive();
         persist.setIsStreamable(isStreamable);
         cb(null, 201);
     });
 
-    rpc.register('setPlayerPosition', function (name, position, callback) {
-        watchForEnd();
+    rpc.register('setPlayerPosition', function (name: string, position: Array<number>, callback: Function) {
+        verify.str(name, 'name').arr(position, 'position').keepAlive();
 
-        persist.setPlayerPosition(name, new PlayerInfo.Point(position[0].toFixed(0), position[1].toFixed(0)));
+        persist.setPlayerPosition(name, new PlayerInfo.Point(
+            parseInt(position[0].toFixed(0), 10),
+            parseInt(position[1].toFixed(0), 10))
+        );
         callback(null, 201);
     });
 
     rpc.register('setPlayerSide', function (playerName: string, side: string, cb) {
-        watchForEnd();
+        verify.str(playerName, 'playerName').str(side, 'side').keepAlive();
         logger.debug('playerside ' + playerName + ': ' + side);
         persist.setPlayerSide(playerName, PlayerInfo.Side.fromGameSide(side));
 
@@ -85,7 +105,7 @@ function registerAll() {
     });
 
     rpc.register('setPlayerStatus', function (playerName: string, status: string, callback) {
-        watchForEnd();
+        verify.str(playerName, 'playerName').str(status, 'status').keepAlive();
         logger.debug('playerstatus ' + playerName + ': ' + status);
         persist.setPlayerStatus(playerName, status);
         callback(null, 201);

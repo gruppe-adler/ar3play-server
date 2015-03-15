@@ -1,6 +1,6 @@
 Arma3 mission replays.
 
-# Prerequites
+# Prerequisites
 
 * [`sock.dll` / `sock.so` Arma3 server extension](http://forums.bistudio.com/showthread.php?178327-Node-js-Extension-for-Arma-3-%28sock-sqf-sock-dll-sock-rpc%29)
 * [NodeJS](https://nodejs.org)/ (0.10 or so?)

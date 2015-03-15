@@ -5,12 +5,12 @@ import persist = require('./persist');
 
 export function init() {
 
-    var dummyPos = new PlayerInfo.Point(2000, 1684);
+    var dummyPos = new PlayerInfo.Position(2000, 1684);
 
     persist.missionStart('dummyMission', 'Stratis', function () {
 
-        persist.setPlayerData('refZeroZero', new PlayerInfo.PlayerInfo(new PlayerInfo.Point(0, 0)));
-        persist.setPlayerData('refOneOne', new PlayerInfo.PlayerInfo(new PlayerInfo.Point(1000, 1000)));
+        persist.setPlayerData('refZeroZero', new PlayerInfo.PlayerInfo(new PlayerInfo.Position(0, 0)));
+        persist.setPlayerData('refOneOne', new PlayerInfo.PlayerInfo(new PlayerInfo.Position(1000, 1000)));
         persist.setPlayerData('dummyOpfor', new PlayerInfo.PlayerInfo(dummyPos, 'opfor'));
         persist.setPlayerSide('refZeroZero', 'ind');
         persist.setPlayerSide('refOneOne', 'civ');

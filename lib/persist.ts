@@ -6,6 +6,7 @@ import PlayerInfo = require('./PlayerInfo');
 import Mission = require('./Mission');
 import redis = require('redis');
 import bunyan = require('bunyan');
+import _ = require('underscore');
 
 var HashMap = require('hashmap');
 var redisClient: redis.RedisClient = redis.createClient();
@@ -71,11 +72,10 @@ function getPlayerDataAt(playerKey, cb: AsyncResultCallback<PlayerInfo.PlayerInf
         if (playerData) {
             playerInfo = new PlayerInfo.PlayerInfo();
             if (playerData.x) {
-                playerInfo.position = new PlayerInfo.Point(playerData.x, playerData.y);
+                playerInfo.position = new PlayerInfo.Position(playerData.x, playerData.y, playerData.z, playerData.dir);
             }
             playerInfo.side = playerData.side;
             playerInfo.status = playerData.status;
-
             logger.debug('got playerdata, x: ' + playerData.x);
         } else {
             logger.debug('got no playerdata');
@@ -231,11 +231,9 @@ export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<
     cb && cb(null, 201);
 }
 
-
-export function setPlayerPosition(playerName, position: PlayerInfo.Point, cb?: AsyncResultCallback<any>) {
+export function setPlayerPosition(playerName, position: PlayerInfo.Position, cb?: AsyncResultCallback<any>) {
     getPlayerKeyLive(playerName, getTimestampNow(), function (error: Error, playerKey: string) {
-        redisClient.hset(playerKey, 'x', position.x, dummyCallback);
-        redisClient.hset(playerKey, 'y', position.y, dummyCallback);
+        redisClient.hmset(playerKey, position.toJSON(), dummyCallback);
     });
 
     cb && cb(null, 201);
@@ -245,13 +243,15 @@ export function setPlayerData(playerName: string, player: PlayerInfo.PlayerInfo,
     var now = getTimestampNow();
     getPlayerKeyLive(playerName, now, function (error: Error, playerKey: string) {
         var dataForRedis: any = {
-            side: player.side,
-            status: player.status
-        };
+            status: player.status,
+            vehicle: player.vehicle        };
         if (player.position) {
-            dataForRedis.x = player.position.x;
-            dataForRedis.y = player.position.y;
+            _.extend(dataForRedis, player.position.toJSON());
         }
+        if (player.role) {
+            _.extend(dataForRedis, player.role.toJSON());
+        }
+
         redisClient.hmset(playerKey, dataForRedis, dummyCallback);
     });
     cb && cb(null, 201);

@@ -29,6 +29,12 @@ var verify = {
         }
         return this;
     },
+    fn: function (variable: any, errorKey: string) {
+        if (typeof variable !== 'function') {
+            throw new Error('not a function: ' + errorKey);
+        }
+        return this;
+    },
     keepAlive: function () {
         keepAlive();
         return this;
@@ -41,6 +47,34 @@ export function init(port) {
     rpc.listen("::1", port);
     logger.info('listening for RPC calls on port ' + port);
     keepAlive();
+}
+
+function armaToPlayerPosition(position: Array<number>): PlayerInfo.Position {
+    return new PlayerInfo.Position(
+        parseInt(position[0].toFixed(0), 10),
+        parseInt(position[1].toFixed(0), 10),
+        parseInt(position[2].toFixed(0), 10),
+        parseInt(position[3].toFixed(0), 10)
+    );
+}
+
+function armaToPlayerRole(role: Array<string>): PlayerInfo.Role {
+    var
+        classtype = role[0],
+        side = role[1];
+
+    if (PlayerInfo.Classtype.values.indexOf(classtype) === -1) {
+        logger.warn('ignoring unknown classtype ' + classtype);
+        classtype = null;
+    }
+    return new PlayerInfo.Role(role[0], PlayerInfo.Side.fromGameSide(side));
+}
+
+function setPlayerPosition(name: string, position: Array<number>) {
+    persist.setPlayerPosition(
+        name,
+        armaToPlayerPosition(position)
+    );
 }
 
 function registerAll() {
@@ -89,11 +123,44 @@ function registerAll() {
     rpc.register('setPlayerPosition', function (name: string, position: Array<number>, callback: Function) {
         verify.str(name, 'name').arr(position, 'position').keepAlive();
 
-        persist.setPlayerPosition(name, new PlayerInfo.Point(
-            parseInt(position[0].toFixed(0), 10),
-            parseInt(position[1].toFixed(0), 10))
-        );
+        setPlayerPosition(name, position);
         callback(null, 201);
+    });
+
+    rpc.register('setAllPlayerData', function (allPlayerData: Array<Array<any>>, callback: Function) {
+        //  [
+        //    [ name, position: [x, y, z, dir], role: [classtype, side], vehicleType ]
+        //  ]
+        verify.arr(allPlayerData, 'positions').fn(callback, 'callback').keepAlive();
+
+        allPlayerData.forEach(function (playerData: Array<any>) {
+            verify.arr(playerData, 'playerData').str(playerData[0], 'playerData.name');
+
+            var
+                name = playerData[0],
+                position = playerData[1],
+                role = playerData[2],
+                vehicle = playerData[3],
+                playerInfo = new PlayerInfo.PlayerInfo();
+
+            if (position) {
+                playerInfo.position = armaToPlayerPosition(position);
+            }
+            if (role) {
+                playerInfo.role = armaToPlayerRole(role);
+            }
+            if (vehicle) {
+                if (PlayerInfo.Vehicle.values.indexOf(vehicle) === -1) {
+                    logger.warn('ignoring unknown vehicle type ' + vehicle);
+                } else {
+                    playerInfo.vehicle = vehicle;
+                }
+            }
+
+            persist.setPlayerData(name, playerInfo);
+        });
+
+        callback && callback(null, 201);
     });
 
     rpc.register('setPlayerSide', function (playerName: string, side: string, cb) {

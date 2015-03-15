@@ -1,7 +1,13 @@
+/// <reference path="./../typings/tsd.d.ts" />
 
 import bunyan = require('bunyan');
+import _ = require('underscore');
 
 var logger = bunyan.createLogger({name: 'PlayerInfo'});
+
+function filterEmpty(val) {
+    return !!val;
+}
 
 export class Position {
     x: number;
@@ -16,12 +22,7 @@ export class Position {
         this.dir = dir;
     }
     toJSON(): any {
-        return {
-            x: this.x,
-            y: this.y,
-            z: this.z,
-            dir: this.dir
-        }
+        return _.pick(this, filterEmpty);
     }
 }
 
@@ -34,23 +35,19 @@ export class Role {
         this.classtype = classtype;
     }
     toJSON(): any {
-        return {
-            side: this.side,
-            classtype: this.classtype
-        };
+        return _.pick(this, filterEmpty);
     }
 }
 
 export class PlayerInfo {
     position: Position;
-    side: string;
-    status: string;
+    status: Status;
     role: Role;
     vehicle: string;
 
-    constructor(position?: Position, side?: string, status?: string) {
+    constructor(position?: Position, role?: Role, status?: Status) {
         this.position = position;
-        this.side = side;
+        this.role = role;
         this.status = status;
     }
     augment(playerInfo?: PlayerInfo): PlayerInfo {
@@ -60,8 +57,8 @@ export class PlayerInfo {
         if (!playerInfo.position) {
             playerInfo.position = this.position;
         }
-        if (!playerInfo.side) {
-            playerInfo.side = this.side;
+        if (!playerInfo.role) {
+            playerInfo.role = this.role;
         }
         if (!playerInfo.status) {
             playerInfo.status = this.status;
@@ -77,19 +74,33 @@ export class PlayerInfo {
         if (this.status) {
             result.status = this.status
         }
-        if (this.side) {
-            result.side = this.side;
+        if (this.role) {
+            result.role = this.role;
         }
         return result;
     }
 }
 
-export class Status {
+export class Condition {
+
     static ALIVE = 'alive';
     static UNCONSCIOUS = 'unconscious';
     static DEAD = 'dead';
 
-    static values = [Status.ALIVE, Status.UNCONSCIOUS, Status.DEAD];
+    static values = [Condition.ALIVE, Condition.UNCONSCIOUS, Condition.DEAD];
+}
+
+export class Status {
+    vehicle: string;
+    condition: string;
+
+    constructor(condition: string, vehicle?: string) {
+        this.condition = condition;
+        this.vehicle = vehicle;
+    }
+    toJSON(): any {
+        return _.pick(this, filterEmpty);
+    }
 }
 
 export class Classtype {

@@ -1,26 +1,28 @@
 /// <reference path="./../typings/tsd.d.ts" />
 
 import PlayerInfo = require('./PlayerInfo');
-import persist = require('./persist');
+import rpc = require('./rpc');
 
 export function init() {
+    var dummyPos = [2000, 1684, 5, 45];
 
-    var dummyPos = new PlayerInfo.Position(2000, 1684);
+    rpc.missionStart('dummyMission', 'Stratis', function () {
 
-    persist.missionStart('dummyMission', 'Stratis', function () {
+        rpc.setAllPlayerData([
+            ['refZeroZero', [0, 0, 0, 0], ['WEST', 'at'], ['alive', 'tank']],
+            ['refOneOne', [1000, 1000, 0, 180], null, null],
+            ['dummyOpfor', dummyPos, ['EAST', 'unknown'], ['alive']]
+        ], function () {
 
-        persist.setPlayerData('refZeroZero', new PlayerInfo.PlayerInfo(new PlayerInfo.Position(0, 0)));
-        persist.setPlayerData('refOneOne', new PlayerInfo.PlayerInfo(new PlayerInfo.Position(1000, 1000)));
-        persist.setPlayerData('dummyOpfor', new PlayerInfo.PlayerInfo(dummyPos, 'opfor'));
-        persist.setPlayerSide('refZeroZero', 'ind');
-        persist.setPlayerSide('refOneOne', 'civ');
+        });
 
-        persist.setIsStreamable(true);
+        rpc.setIsStreamable(true, function () {});
     });
 
     setInterval(function () {
-        dummyPos.x = dummyPos.x + parseInt('' + Math.random() * 5, 10);
-        dummyPos.y = dummyPos.y + parseInt('' + Math.random() * 3, 10);
-        persist.setPlayerPosition('dummyOpfor', dummyPos);
+        dummyPos[0] = dummyPos[0] + parseInt('' + Math.random() * 5, 10);
+        dummyPos[1] = dummyPos[1] + parseInt('' + Math.random() * 3, 10);
+        dummyPos[3] = dummyPos[3] + parseInt('' + Math.random() * 50, 10) % 360;
+        rpc.setPlayerPosition('dummyOpfor', dummyPos, function () {});
     }, 1500);
 }

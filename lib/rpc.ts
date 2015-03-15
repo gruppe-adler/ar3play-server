@@ -60,121 +60,135 @@ function armaToPlayerPosition(position: Array<number>): PlayerInfo.Position {
 
 function armaToPlayerRole(role: Array<string>): PlayerInfo.Role {
     var
-        classtype = role[0],
-        side = role[1];
+        classtype = role[1],
+        side = role[0];
 
-    if (PlayerInfo.Classtype.values.indexOf(classtype) === -1) {
+    if (classtype && PlayerInfo.Classtype.values.indexOf(classtype) === -1) {
         logger.warn('ignoring unknown classtype ' + classtype);
         classtype = null;
     }
-    return new PlayerInfo.Role(role[0], PlayerInfo.Side.fromGameSide(side));
+    return new PlayerInfo.Role(side ? PlayerInfo.Side.fromGameSide(side) : null, classtype);
 }
 
-function setPlayerPosition(name: string, position: Array<number>) {
+function armaToPlayerStatus(status: Array<string>): PlayerInfo.Status {
+    var
+        condition = status[0],
+        vehicle = status[1];
+
+    if (vehicle && PlayerInfo.Vehicle.values.indexOf(vehicle) === -1) {
+        logger.warn('ignoring unknown vehicle type ' + vehicle);
+        vehicle = null;
+    }
+    if (condition && PlayerInfo.Condition.values.indexOf(condition) === -1) {
+        logger.warn('ignoring unknown condition ' + condition);
+        condition = null;
+    }
+    return new PlayerInfo.Status(condition, vehicle);
+}
+
+function doSetPlayerPosition(name: string, position: Array<number>) {
     persist.setPlayerPosition(
         name,
         armaToPlayerPosition(position)
     );
 }
 
+/**
+ *  [
+ *    [ name, position: [x, y, z, dir], role: [side, classtype], status: [vehicletype, condition] ]
+ *  ]
+ */
+export function setAllPlayerData(allPlayerData: Array<Array<any>>, callback: Function) {
+    verify.arr(allPlayerData, 'positions').fn(callback, 'callback').keepAlive();
+
+    allPlayerData.forEach(function (playerData) {
+        setPlayerData(playerData);
+    });
+
+    callback && callback(null, 201);
+}
+
+export function setPlayerData(playerData: Array<any>, callback?: Function) {
+    verify.arr(playerData, 'playerData').str(playerData[0], 'playerData.name');
+
+    var
+        name = playerData[0],
+        position = playerData[1],
+        role = playerData[2],
+        status = playerData[3],
+        playerInfo = new PlayerInfo.PlayerInfo();
+
+    if (position) {
+        playerInfo.position = armaToPlayerPosition(position);
+    }
+    if (role) {
+        playerInfo.role = armaToPlayerRole(role);
+    }
+    if (status) {
+        playerInfo.status = armaToPlayerStatus(status);
+    }
+
+    persist.setPlayerData(name, playerInfo);
+
+    callback && callback(null, 201);
+}
+
+/**
+ *
+ * NOTE: callback is *not* called immediately here,
+ *       because subsequent client requests will assume mission is already changed
+ */
+export function missionStart(missionName: string, worldname: string, callback: Function) {
+    verify.str(missionName, 'missionName').str(worldname, 'worldname').keepAlive();
+    logger.info('mission started: ' + missionName);
+    persist.missionStart(missionName, worldname, function (error: Error) {
+
+        callback(error, 200);
+    });
+}
+
+export function getDate(callback: Function) {
+    keepAlive();
+    logger.debug('getDate called :)');
+    callback(null, new Date().toString());
+}
+
+export function missionEnd(callback: Function) {
+    console.log('missionEnd');
+    persist.missionEnd();
+    callback(null, 201);
+}
+
+export function setIsStreamable(isStreamable: boolean, cb: Function) {
+    keepAlive();
+    persist.setIsStreamable(isStreamable);
+    cb(null, 201);
+}
+
+export function setPlayerPosition(name: string, position: Array<number>, callback: Function) {
+    verify.str(name, 'name').arr(position, 'position').keepAlive();
+
+    doSetPlayerPosition(name, position);
+    callback(null, 201);
+}
+
+export function echo() {
+    keepAlive();
+    var args = Array.prototype.slice.call(arguments, 0);
+    var callback = args.pop();
+
+    logger.debug(args);
+
+    callback(null, args);
+}
+
 function registerAll() {
-    /**
-     *  Echo back all arguments passed.
-     *  echo(...,callback);
-     */
-    rpc.register('echo', function () {
-        keepAlive();
-        var args = Array.prototype.slice.call(arguments, 0);
-        var callback = args.pop();
-
-        logger.debug(args);
-
-        callback(null, args);
-    });
-
-    /**
-     *  Get date (no arguments)
-     */
-    rpc.register('getDate', function (callback: Function) {
-        keepAlive();
-        logger.debug('getDate called :)');
-        callback(null, new Date().toString());
-    });
-
-    rpc.register('missionStart', function (missionName: string, worldname: string, callback: Function) {
-        verify.str(missionName, 'missionName').str(worldname, 'worldname').keepAlive();
-        logger.info('mission started: ' + missionName);
-        persist.missionStart(missionName, worldname);
-        callback(null, 201);
-    });
-
-    rpc.register('missionEnd', function (callback: Function) {
-        console.log('missionEnd');
-        persist.missionEnd();
-        callback(null, 201);
-    });
-
-    rpc.register('setIsStreamable', function (isStreamable: boolean, cb: Function) {
-        keepAlive();
-        persist.setIsStreamable(isStreamable);
-        cb(null, 201);
-    });
-
-    rpc.register('setPlayerPosition', function (name: string, position: Array<number>, callback: Function) {
-        verify.str(name, 'name').arr(position, 'position').keepAlive();
-
-        setPlayerPosition(name, position);
-        callback(null, 201);
-    });
-
-    rpc.register('setAllPlayerData', function (allPlayerData: Array<Array<any>>, callback: Function) {
-        //  [
-        //    [ name, position: [x, y, z, dir], role: [classtype, side], vehicleType ]
-        //  ]
-        verify.arr(allPlayerData, 'positions').fn(callback, 'callback').keepAlive();
-
-        allPlayerData.forEach(function (playerData: Array<any>) {
-            verify.arr(playerData, 'playerData').str(playerData[0], 'playerData.name');
-
-            var
-                name = playerData[0],
-                position = playerData[1],
-                role = playerData[2],
-                vehicle = playerData[3],
-                playerInfo = new PlayerInfo.PlayerInfo();
-
-            if (position) {
-                playerInfo.position = armaToPlayerPosition(position);
-            }
-            if (role) {
-                playerInfo.role = armaToPlayerRole(role);
-            }
-            if (vehicle) {
-                if (PlayerInfo.Vehicle.values.indexOf(vehicle) === -1) {
-                    logger.warn('ignoring unknown vehicle type ' + vehicle);
-                } else {
-                    playerInfo.vehicle = vehicle;
-                }
-            }
-
-            persist.setPlayerData(name, playerInfo);
-        });
-
-        callback && callback(null, 201);
-    });
-
-    rpc.register('setPlayerSide', function (playerName: string, side: string, cb) {
-        verify.str(playerName, 'playerName').str(side, 'side').keepAlive();
-        logger.debug('playerside ' + playerName + ': ' + side);
-        persist.setPlayerSide(playerName, PlayerInfo.Side.fromGameSide(side));
-
-        cb && cb(null, 201);
-    });
-
-    rpc.register('setPlayerStatus', function (playerName: string, status: string, callback) {
-        verify.str(playerName, 'playerName').str(status, 'status').keepAlive();
-        logger.debug('playerstatus ' + playerName + ': ' + status);
-        persist.setPlayerStatus(playerName, status);
-        callback(null, 201);
-    });
+    rpc.register('echo', echo);
+    rpc.register('getDate', getDate);
+    rpc.register('missionStart', missionStart);
+    rpc.register('missionEnd', missionEnd);
+    rpc.register('setIsStreamable', setIsStreamable);
+    rpc.register('setPlayerPosition', setPlayerPosition);
+    rpc.register('setAllPlayerData', setAllPlayerData);
+    rpc.register('setPlayerData', setPlayerData);
 }

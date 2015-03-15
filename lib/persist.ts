@@ -74,13 +74,16 @@ function getPlayerDataAt(playerKey, cb: AsyncResultCallback<PlayerInfo.PlayerInf
             if (playerData.x) {
                 playerInfo.position = new PlayerInfo.Position(playerData.x, playerData.y, playerData.z, playerData.dir);
             }
-            playerInfo.side = playerData.side;
-            playerInfo.status = playerData.status;
+            if (playerData.condition || playerData.vehicle) {
+                playerInfo.status = new PlayerInfo.Status(playerData.condition, playerData.vehicle);
+            }
+            if (playerData.classtype || playerData.side) {
+                playerInfo.role = new PlayerInfo.Role(playerData.side, playerData.classtype);
+            }
             logger.debug('got playerdata, x: ' + playerData.x);
         } else {
             logger.debug('got no playerdata');
         }
-
 
         cb(error, playerInfo);
     });
@@ -212,9 +215,9 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
             },
             dummyCallback
         );
+        
+        cb && cb(null, currentInstanceId);
     });
-
-    cb && cb(null, 201);
 }
 
 export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<any>) {
@@ -232,47 +235,24 @@ export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<
 }
 
 export function setPlayerPosition(playerName, position: PlayerInfo.Position, cb?: AsyncResultCallback<any>) {
-    getPlayerKeyLive(playerName, getTimestampNow(), function (error: Error, playerKey: string) {
-        redisClient.hmset(playerKey, position.toJSON(), dummyCallback);
-    });
-
-    cb && cb(null, 201);
+    setPlayerData(playerName, new PlayerInfo.PlayerInfo(position), cb);
 }
 
 export function setPlayerData(playerName: string, player: PlayerInfo.PlayerInfo, cb?: AsyncResultCallback<any>) {
     var now = getTimestampNow();
     getPlayerKeyLive(playerName, now, function (error: Error, playerKey: string) {
-        var dataForRedis: any = {
-            status: player.status,
-            vehicle: player.vehicle        };
+        var dataForRedis: any = {};
         if (player.position) {
             _.extend(dataForRedis, player.position.toJSON());
         }
         if (player.role) {
             _.extend(dataForRedis, player.role.toJSON());
         }
+        if (player.status) {
+            _.extend(dataForRedis, player.status.toJSON());
+        }
 
         redisClient.hmset(playerKey, dataForRedis, dummyCallback);
-    });
-    cb && cb(null, 201);
-}
-
-export function setPlayerStatus(playerName: string, status: string, cb?: AsyncResultCallback<any>) {
-    getPlayerKeyLive(playerName, getTimestampNow(), function (error: Error, playerKey: string) {
-        redisClient.hset(playerKey, 'status', status, dummyCallback);
-    });
-    var playerInfo = new PlayerInfo.PlayerInfo();
-    playerInfo.status = status;
-    cb && cb(null, 201);
-}
-
-export function setPlayerSide(playerName: string, side: string, cb?: AsyncResultCallback<any>) {
-    getPlayerKeyLive(playerName, getTimestampNow(), function (error: Error, playerKey: string) {
-        try {
-            redisClient.hset(playerKey, 'side', side, dummyCallback);
-        } catch (e) {
-            logger.error('error setting player ' + playerName + ' side: ' + e.message);
-        }
     });
     cb && cb(null, 201);
 }

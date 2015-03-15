@@ -31,7 +31,7 @@ var verify = {
     },
     fn: function (variable: any, errorKey: string) {
         if (typeof variable !== 'function') {
-            throw new Error('not a function: ' + errorKey);
+            throw new Error('not a function: ' + errorKey + ', but: ' + variable);
         }
         return this;
     },
@@ -154,7 +154,7 @@ export function getDate(callback: Function) {
 }
 
 export function missionEnd(callback: Function) {
-    console.log('missionEnd');
+    logger.info('mission end called.');
     persist.missionEnd();
     callback(null, 201);
 }

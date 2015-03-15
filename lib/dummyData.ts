@@ -4,7 +4,9 @@ import PlayerInfo = require('./PlayerInfo');
 import rpc = require('./rpc');
 
 export function init() {
-    var dummyPos = [2000, 1684, 5, 45];
+    var
+        dummyPos = [2000, 1684, 5, 45],
+        interval, cnt = 0;
 
     rpc.missionStart('dummyMission', 'Stratis', function () {
 
@@ -19,7 +21,11 @@ export function init() {
         rpc.setIsStreamable(true, function () {});
     });
 
-    setInterval(function () {
+    interval = setInterval(function () {
+        if (cnt > 100) {
+            clearInterval(interval);
+        }
+        cnt++;
         dummyPos[0] = dummyPos[0] + parseInt('' + Math.random() * 5, 10);
         dummyPos[1] = dummyPos[1] + parseInt('' + Math.random() * 3, 10);
         dummyPos[3] = dummyPos[3] + parseInt('' + Math.random() * 50, 10) % 360;

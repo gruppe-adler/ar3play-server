@@ -12,8 +12,10 @@ export function init() {
 
         rpc.setAllPlayerData([
             ['refZeroZero', [0, 0, 0, 0], ['WEST', 'at'], ['alive', 'tank']],
-            ['refOneOne', [1000, 1000, 0, 180], null, null],
-            ['dummyOpfor', dummyPos, ['EAST', 'unknown'], ['alive']]
+            ['refOneOne', [1000, 1000, 0, 90], null, null],
+            ['refTwoTwo', [2000, 2000, 0, 180], ['GUER', 'engineer'], ['alive']],
+            ['refThreeThree', [3000, 3000, 0, 270], ['CIV', 'explosive'], ['dead']],
+            ['dummyOpfor', dummyPos, ['EAST', 'mg'], ['alive']]
         ], function () {
 
         });

@@ -24,7 +24,12 @@ var dummyCallback = function (err: Error, data?: any) {
     }
 };
 
-redisClient.select(Configuration.Redis.db, dummyCallback);
+redisClient.select(Configuration.Redis.db, function (err: Error) {
+    if (err) {
+        throw err;
+    }
+    logger.info('connected to Redis on ' + Configuration.Redis.host + ':' + Configuration.Redis.port + ', db ' + Configuration.Redis.db);
+});
 
 function getTimestampNow(): number {
     return parseInt(((new Date()).getTime() / 1000).toFixed(0), 10);

@@ -1,0 +1,8 @@
+{
+    "redis_port": 6379,
+    "redis_host": "localhost",
+    "redis_db": 5,
+    "webserver_port": 12302,
+    "rpc_port": 5555,
+    "environment": "development"
+}

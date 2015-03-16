@@ -2,4 +2,4 @@
 *.js
 node_modules
 typings
-web/stratis_18022
+config.json

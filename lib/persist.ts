@@ -7,9 +7,10 @@ import Mission = require('./Mission');
 import redis = require('redis');
 import bunyan = require('bunyan');
 import _ = require('underscore');
+import Configuration = require('./Configuration');
 
 var HashMap = require('hashmap');
-var redisClient: redis.RedisClient = redis.createClient();
+var redisClient: redis.RedisClient = redis.createClient(Configuration.Redis.port, Configuration.Redis.host);
 var currentInstanceId: string = '';
 var sprintf = sf.sprintf;
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
@@ -23,7 +24,7 @@ var dummyCallback = function (err: Error, data?: any) {
     }
 };
 
-redisClient.select(2, dummyCallback);
+redisClient.select(Configuration.Redis.db, dummyCallback);
 
 function getTimestampNow(): number {
     return parseInt(((new Date()).getTime() / 1000).toFixed(0), 10);

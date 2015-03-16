@@ -7,12 +7,13 @@ import persist = require('./lib/persist');
 import dummyData = require('./lib/dummyData');
 import bunyan = require('bunyan');
 import webserver = require('./lib/webserver');
+import config = require('./lib/Configuration');
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
-rpc.init(5555);
-webserver.init(12302);
+rpc.init(config.Rpc.port);
+webserver.init(config.Webserver.port);
 
-if (true) {
+if (config.environment === 'development') {
     dummyData.init();
 }
 

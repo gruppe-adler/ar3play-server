@@ -11,10 +11,15 @@ export function init() {
     rpc.missionStart('dummyMission', 'Stratis', function () {
 
         rpc.setAllPlayerData([
-            ['refZeroZero', [0, 0, 0, 0], ['WEST', 'at'], ['alive', 'tank']],
+            ['refZeroZero', [1, 1, 0, 0], ['WEST', 'at'], ['alive', 'tank']],
+            ['refZeroZeroOne', [10, 10, 0, 0], ['WEST', 'at'], ['alive', 'helicopter']],
+            ['refZeroZeroTwo', [20, 10, 0, 0], ['CIV', 'unknown'], ['alive', 'truck']],
+            ['refZeroZeroThree', [10, 20, 0, 0], ['EAST', 'unknown'], ['alive', 'ship']],
+            ['refZeroZeroFour', [20, 20, 0, 0], ['GUER', 'unknown'], ['alive', 'unknown']],
             ['refOneOne', [1000, 1000, 0, 90], null, null],
             ['refTwoTwo', [2000, 2000, 0, 180], ['GUER', 'engineer'], ['alive']],
-            ['refThreeThree', [3000, 3000, 0, 270], ['CIV', 'explosive'], ['dead']],
+            ['refThreeThree', [3000, 3000, 0, 270], ['CIV', 'explosive'], ['alive']],
+            ['refThreeThreeOne', [3010, 3010, 0, 270], ['CIV', 'explosive'], ['dead']],
             ['dummyOpfor', dummyPos, ['EAST', 'mg'], ['alive']]
         ], function () {
 
@@ -25,6 +30,7 @@ export function init() {
 
     interval = setInterval(function () {
         if (cnt > 100) {
+            rpc.setPlayerData(['dummyOpfor', null, null, ['dead']]);
             clearInterval(interval);
         }
         cnt++;

@@ -78,7 +78,12 @@ function getPlayerDataAt(playerKey, cb: AsyncResultCallback<PlayerInfo.PlayerInf
         if (playerData) {
             playerInfo = new PlayerInfo.PlayerInfo();
             if (playerData.x) {
-                playerInfo.position = new PlayerInfo.Position(playerData.x, playerData.y, playerData.z, playerData.dir);
+                playerInfo.position = new PlayerInfo.Position(
+                    parseInt(playerData.x, 10),
+                    parseInt(playerData.y, 10),
+                    parseInt(playerData.z, 10),
+                    parseInt(playerData.dir, 10)
+                );
             }
             if (playerData.condition || playerData.vehicle) {
                 playerInfo.status = new PlayerInfo.Status(playerData.condition, playerData.vehicle);

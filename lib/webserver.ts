@@ -172,7 +172,6 @@ function deleteMissionInstance(req: restify.Request, res: restify.Response, next
 
 function unknownMethodHandler(req, res) {
     if (req.method.toLowerCase() === 'options') {
-        console.log('received an options method request');
         var allowHeaders = [
             'authentication',
             'Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With'

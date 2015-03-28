@@ -8,6 +8,7 @@ import redis = require('redis');
 import bunyan = require('bunyan');
 import _ = require('underscore');
 import Configuration = require('./Configuration');
+import Authentication = require('./Authentication');
 
 var HashMap = require('hashmap');
 var redisClient: redis.RedisClient = redis.createClient(Configuration.Redis.port, Configuration.Redis.host);
@@ -15,7 +16,7 @@ var currentInstanceId: string = '';
 var sprintf = sf.sprintf;
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
-logger.level("info");
+logger.level(Configuration.logLevel);
 
 var dummyCallback = function (err: Error, data?: any) {
     if (err) {
@@ -51,6 +52,10 @@ export function getCurrentMission(cb: AsyncResultCallback<string>) {
 
 function getPlayerHASHKey(instanceId: string, playerName: string, timestamp: number): string {
     return sprintf('mission:%s,player:%s,ts:%d', instanceId, playerName, timestamp);
+}
+
+function getPlayerHashKeyPattern(instanceId: string): string {
+    return sprintf('mission:%s,player:*', instanceId);
 }
 
 function getPlayersSETKey(instanceId: string) {
@@ -266,4 +271,50 @@ export function setPlayerData(playerName: string, player: PlayerInfo.PlayerInfo,
         redisClient.hmset(playerKey, dataForRedis, dummyCallback);
     });
     cb && cb(null, 201);
+}
+
+export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
+    if (currentInstanceId === instanceId) {
+        return cb && cb(new Error('cannot delete currently running mission instance!'));
+    }
+
+    async.waterfall([
+        function (cb: Function) {
+            redisClient.keys(getPlayerHashKeyPattern(instanceId), function (err: Error, keys: Array<string>) {
+                cb(err, keys);
+            });
+        },
+        function (keys: Array<string>, cb: Function) {
+            redisClient.del(keys, function (err: Error, count: number) {
+                logger.debug(sprintf('deleted %d player updates from mission %s', count, instanceId));
+                cb(err);
+            });
+        },
+        function (cb: Function) {
+            redisClient.del(getPlayersSETKey(instanceId), function (err: Error, count: number) {
+                logger.debug(sprintf('deleted players set from mission %s', instanceId));
+                cb(err);
+            });
+        },
+        function (cb: Function) {
+            redisClient.del(getMissionHASHKey(instanceId), function (err: Error, count: number) {
+                logger.debug(sprintf('deleted mission instance %s infos', instanceId));
+                cb(err);
+            });
+        },
+        function (cb: Function) {
+            redisClient.zrem('missions', instanceId, function (err: Error) {
+                logger.debug(sprintf('deleted mission instance %s from missions set', instanceId));
+                cb(err);
+            });
+        }
+    ], function (err: Error) {
+        if (err) {
+            logger.error(err);
+            logger.error('could not complete deleting mission instance ' + instanceId);
+        } else {
+            logger.info(sprintf('mission instance %s deleted by user %s', instanceId, Authentication.getUser().name))
+        }
+        cb(err);
+    });
 }

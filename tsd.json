@@ -31,6 +31,9 @@
     },
     "hashmap/hashmap.d.ts": {
       "commit": "a0ee360d4751aa3fc928159d618442e208fd8b23"
+    },
+    "ini/ini.d.ts": {
+      "commit": "be0b6b394f77a59e192ad7cfec18078706e44db5"
     }
   }
 }

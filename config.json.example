@@ -4,5 +4,7 @@
     "redis_db": 5,
     "webserver_port": 12302,
     "rpc_port": 5555,
-    "environment": "development"
+    "environment": "development",
+    "authentication_filename": "/etc/ar3play-auth.ini",
+    "log_level: "info"
 }

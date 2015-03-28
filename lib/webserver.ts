@@ -5,10 +5,14 @@ import bunyan = require('bunyan');
 import persist = require('./persist');
 import PlayerInfo = require('./PlayerInfo');
 import Mission = require('./Mission');
+import Authentication = require('./Authentication');
+import Configuration = require('./Configuration');
 
 var
     logger = bunyan.createLogger({name: __filename.split('/').pop()}),
     server = restify.createServer({log: bunyan.createLogger({name: 'restify'})});
+
+logger.level(Configuration.logLevel);
 
 function parseQuery(query: string): any {
     var params = {};
@@ -25,6 +29,11 @@ function parseQuery(query: string): any {
     });
 
     return params;
+}
+
+function getQueryAsObject(req: restify.Request): any {
+    var nakedQuery = req.query();
+    return typeof nakedQuery === 'string' ? parseQuery(nakedQuery) : {}
 }
 
 export function init(port: number): void {
@@ -62,8 +71,7 @@ function getMissionDetails(req: restify.Request, res: restify.Response) {
 
 function getMissionChanges(req: restify.Request, res: restify.Response) {
     var
-        nakedQuery = req.query(),
-        query = typeof nakedQuery === 'string' ? parseQuery(nakedQuery) : nakedQuery,
+        query = getQueryAsObject(req),
         from = query.from && parseInt(query.from, 10),
         to = query.to && parseInt(query.to, 10);
 
@@ -116,6 +124,53 @@ function missionAuthentication(req: restify.Request, res: restify.Response, next
     });
 }
 
+function secretAuthentication(req: restify.Request, res: restify.Response, next: restify.Next) {
+    var user,
+        query = getQueryAsObject(req);
+    logger.info(req.query());
+    if (query.secret && query.secret) {
+
+        Authentication.auth(query.secret);
+        user = Authentication.getUser();
+        if (user.rank === Authentication.User.RANK_ADMIN) {
+            next();
+        } else {
+            return res.send(403);
+        }
+    } else {
+        return res.send(401);
+    }
+}
+
+function deleteMissionInstance(req: restify.Request, res: restify.Response, next: restify.Next) {
+    var instanceIdToDelete = req.params.id;
+
+    if (!instanceIdToDelete) {
+        return res.send(400, 'missing instance id parameter');
+    }
+
+    persist.getCurrentMission(function (err: Error, currentInstanceId: string) {
+        if (err) {
+            return res.send(500);
+        }
+
+        if (currentInstanceId === instanceIdToDelete) {
+            return res.send(400, 'cant delete currently running mission instance');
+        }
+
+        persist.deleteMissionInstance(instanceIdToDelete, function (err) {
+            if (err) {
+                logger.error(err);
+                res.send(500);
+            } else {
+                logger.info('mission instance deleted: ' + instanceIdToDelete);
+                res.send(204);
+            }
+        });
+    });
+
+}
+
 function sendCorsHeaders(req: restify.Request, res: restify.Response, next: restify.Next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
@@ -128,3 +183,4 @@ server.get('/missions', returnAllMissions);
 server.get('/currentMission', returnCurrentMission);
 server.get('/mission/:id/changes', missionAuthentication, getMissionChanges);
 server.get('/mission/:id', getMissionDetails);
+server.del('/mission/:id', secretAuthentication, deleteMissionInstance);

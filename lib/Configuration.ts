@@ -26,6 +26,8 @@ function assertTypes(collection: any, variables: any) {
 }
 
 export var environment: string = 'development';
+export var authenticationFileName: string = '';
+export var logLevel: string = 'info';
 
 (function init() {
 
@@ -67,4 +69,6 @@ export var environment: string = 'development';
     Rpc.port = config.rpc_port;
 
     environment = config.environment;
+    authenticationFileName = config.authentication_filename;
+    logLevel = config.log_level || logLevel;
 }());

@@ -179,6 +179,7 @@ function unknownMethodHandler(req, res) {
         ];
 
         res.methods.push('DELETE');
+        res.methods.push('GET');
 
         if (res.methods.indexOf('OPTIONS') === -1) {
             res.methods.push('OPTIONS');
@@ -196,7 +197,10 @@ function unknownMethodHandler(req, res) {
 }
 
 server.on('MethodNotAllowed', unknownMethodHandler);
-
+server.use(function (req: restify.Request, res: restify.Response, next: restify.Next) {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    next();
+});
 server.get('/missions', returnAllMissions);
 server.get('/currentMission', returnCurrentMission);
 server.get('/mission/:id/changes', missionAuthentication, getMissionChanges);

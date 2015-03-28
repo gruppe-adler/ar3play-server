@@ -126,11 +126,11 @@ function missionAuthentication(req: restify.Request, res: restify.Response, next
 
 function secretAuthentication(req: restify.Request, res: restify.Response, next: restify.Next) {
     var user,
-        query = getQueryAsObject(req);
-    logger.info(req.query());
-    if (query.secret && query.secret) {
+        query = getQueryAsObject(req),
+        secret = (query.secret || req.headers.authentication);
 
-        Authentication.auth(query.secret);
+    if (secret) {
+        Authentication.auth(secret);
         user = Authentication.getUser();
         if (user.rank === Authentication.User.RANK_ADMIN) {
             next();
@@ -168,17 +168,35 @@ function deleteMissionInstance(req: restify.Request, res: restify.Response, next
             }
         });
     });
-
 }
 
-function sendCorsHeaders(req: restify.Request, res: restify.Response, next: restify.Next) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-    next();
+function unknownMethodHandler(req, res) {
+    if (req.method.toLowerCase() === 'options') {
+        console.log('received an options method request');
+        var allowHeaders = [
+            'authentication',
+            'Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With'
+        ];
+
+        res.methods.push('DELETE');
+
+        if (res.methods.indexOf('OPTIONS') === -1) {
+            res.methods.push('OPTIONS');
+        }
+
+        res.header('Access-Control-Allow-Credentials', true);
+        res.header('Access-Control-Allow-Headers', allowHeaders.join(', '));
+        res.header('Access-Control-Allow-Methods', res.methods.join(', '));
+        res.header('Access-Control-Allow-Origin', req.headers.origin);
+
+        return res.send(204);
+    }
+    else
+        return res.send(new restify.MethodNotAllowedError());
 }
 
-server.use(sendCorsHeaders);
+server.on('MethodNotAllowed', unknownMethodHandler);
+
 server.get('/missions', returnAllMissions);
 server.get('/currentMission', returnCurrentMission);
 server.get('/mission/:id/changes', missionAuthentication, getMissionChanges);

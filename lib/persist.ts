@@ -228,8 +228,8 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
         var now = getTimestampNow();
         currentInstanceId = createMissionInstanceId();
 
-        redisClient.set(getCurrentMissionSTRINGKey(), currentInstanceId, dummyCallback);
-        redisClient.zadd(getAllMissionsZSETKey(), now, currentInstanceId, dummyCallback);
+        redisClient.set(getCurrentMissionSTRINGKey(), encodeURIComponent(currentInstanceId), dummyCallback);
+        redisClient.zadd(getAllMissionsZSETKey(), now, encodeURIComponent(currentInstanceId), dummyCallback);
         redisClient.hmset(
             getMissionHASHKey(currentInstanceId),
             {
@@ -311,7 +311,7 @@ export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
             });
         },
         function (cb: Function) {
-            redisClient.zrem(getAllMissionsZSETKey(), instanceId, function (err: Error) {
+            redisClient.zrem(getAllMissionsZSETKey(), encodeURIComponent(instanceId), function (err: Error) {
                 logger.debug(sprintf('deleted mission instance %s from missions set', instanceId));
                 cb(err);
             });

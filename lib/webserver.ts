@@ -80,7 +80,7 @@ function getMissionChanges(req: restify.Request, res: restify.Response) {
     }
 
     if (!(from && to)) {
-        logger.warn('no from and to: ' + from + ' ' + to + ' query ' + nakedQuery);
+        logger.warn('no from and to: ' + from + ' ' + to + ' query ' + JSON.stringify(query));
         return res.send(400, 'need from and to parameters, both being timestamps');
     }
 

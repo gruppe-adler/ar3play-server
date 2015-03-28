@@ -293,6 +293,10 @@ export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
             });
         },
         function (keys: Array<string>, cb: Function) {
+            if (!keys.length) {
+                return cb();
+            }
+
             redisClient.del(keys, function (err: Error, count: number) {
                 logger.debug(sprintf('deleted %d player updates from mission %s', count || 0, instanceId));
                 cb(err);

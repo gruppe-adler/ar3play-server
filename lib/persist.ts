@@ -36,8 +36,8 @@ function getTimestampNow(): number {
     return parseInt(((new Date()).getTime() / 1000).toFixed(0), 10);
 }
 
-function createMissionInstanceId(missionName: string, timestamp: number): string {
-    return sprintf('%s-%s', timestamp, missionName.trim());
+function createMissionInstanceId(): string {
+    return sprintf('%s', (new Date()).getTime());
 }
 
 export function getCurrentMission(cb: AsyncResultCallback<string>) {
@@ -45,30 +45,38 @@ export function getCurrentMission(cb: AsyncResultCallback<string>) {
         return cb(null, currentInstanceId);
     }
 
-    redisClient.get('currentInstanceId', function (err: Error, missionName: string) {
+    redisClient.get(getCurrentMissionSTRINGKey(), function (err: Error, missionName: string) {
        cb(err, missionName || 'empty');
     });
 }
 
 function getPlayerHASHKey(instanceId: string, playerName: string, timestamp: number): string {
-    return sprintf('mission:%s,player:%s,ts:%d', instanceId, playerName, timestamp);
+    return sprintf('mission:%s,player:%s,ts:%d', encodeURIComponent(instanceId), encodeURIComponent(playerName), timestamp);
 }
 
 function getPlayerHashKeyPattern(instanceId: string): string {
-    return sprintf('mission:%s,player:*', instanceId);
+    return sprintf('mission:%s,player:*', encodeURIComponent(instanceId));
 }
 
 function getPlayersSETKey(instanceId: string) {
-    return sprintf('mission:%s,players', instanceId);
+    return sprintf('mission:%s,players', encodeURIComponent(instanceId));
 }
 function getMissionHASHKey(instanceId: string): string {
-    return sprintf('mission:%s,mission', instanceId);
+    return sprintf('mission:%s,mission', encodeURIComponent(instanceId));
+}
+
+function getAllMissionsZSETKey(): string {
+    return 'missions';
+}
+
+function getCurrentMissionSTRINGKey(): string {
+    return 'currentInstanceId';
 }
 
 function getPlayerKeyLive(playerName: string, timestamp: number, cb: AsyncResultCallback<string>) {
     getCurrentMission(function (err: Error, instanceId: string) {
-        redisClient.sadd(getPlayersSETKey(instanceId), playerName, dummyCallback);
-        var playerKey = getPlayerHASHKey(instanceId, playerName, timestamp);
+        redisClient.sadd(getPlayersSETKey(instanceId), encodeURIComponent(playerName), dummyCallback);
+        var playerKey = getPlayerHASHKey(instanceId, encodeURIComponent(playerName), timestamp);
         cb(err, playerKey);
     });
 }
@@ -122,7 +130,7 @@ export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
 }
 
 export function getAllMissions(cb: AsyncResultCallback<Array<Mission.MissionInfo>>) {
-    redisClient.zrevrange('missions', 0, 1000, function (error: Error, instanceIds: Array<string>) {
+    redisClient.zrevrange(getAllMissionsZSETKey(), 0, 1000, function (error: Error, instanceIds: Array<string>) {
         async.map(instanceIds, getMissionDetails, cb);
     });
 }
@@ -208,7 +216,7 @@ export function missionEnd(cb?: AsyncResultCallback<any>) {
     getCurrentMission(function (err: Error, instanceId: string) {
         redisClient.hset(getMissionHASHKey(instanceId), 'endtime', getTimestampNow(), dummyCallback);
         currentInstanceId = 'empty';
-        redisClient.set('currentInstanceId', 'empty', function (err: Error) {
+        redisClient.set(getCurrentMissionSTRINGKey(), 'empty', function (err: Error) {
             cb && cb(err, 201);
         });
     });
@@ -218,10 +226,10 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
 
     missionEnd(function () {
         var now = getTimestampNow();
-        currentInstanceId = createMissionInstanceId(realMissionName, now);
+        currentInstanceId = createMissionInstanceId();
 
-        redisClient.set('currentInstanceId', currentInstanceId, dummyCallback);
-        redisClient.zadd('missions', now, currentInstanceId, dummyCallback);
+        redisClient.set(getCurrentMissionSTRINGKey(), currentInstanceId, dummyCallback);
+        redisClient.zadd(getAllMissionsZSETKey(), now, currentInstanceId, dummyCallback);
         redisClient.hmset(
             getMissionHASHKey(currentInstanceId),
             {
@@ -303,7 +311,7 @@ export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
             });
         },
         function (cb: Function) {
-            redisClient.zrem('missions', instanceId, function (err: Error) {
+            redisClient.zrem(getAllMissionsZSETKey(), instanceId, function (err: Error) {
                 logger.debug(sprintf('deleted mission instance %s from missions set', instanceId));
                 cb(err);
             });

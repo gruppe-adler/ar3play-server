@@ -6,5 +6,5 @@
     "rpc_port": 5555,
     "environment": "development",
     "authentication_filename": "auth.ini.example",
-    "log_level: "info"
+    "log_level": "info"
 }

@@ -9,7 +9,9 @@ Arma3 mission replays.
 # Parts of the whole
 
 * [Server](https://github.com/gruppe-adler/ar3play-server) (this repo)
-* [example mission](https://github.com/gruppe-adler/ar3play-examplemission)
+* Arma3-Server
+	* [example mission](https://github.com/gruppe-adler/ar3play-examplemission) **OR**
+	* [Arma Serveraddon](https://github.com/gruppe-adler/ar3play-addon)
 * [Webclient](https://github.com/gruppe-adler/ar3play-web)
 
 # Installation of this thing here

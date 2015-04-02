@@ -104,7 +104,20 @@ export class Status {
 }
 
 export class Classtype {
-    static values = ['unknown', 'at', 'engineer', 'explosive', 'leader', 'medic', 'mg', 'officer', 'recon', 'virtual'];
+    static values = [
+        'unknown',
+        'aa',
+        'at',
+        'engineer',
+        'explosive',
+        'grenadier',
+        'leader',
+        'medic',
+        'mg',
+        'officer',
+        'recon',
+        'virtual',
+    ];
 }
 
 export class Vehicle {

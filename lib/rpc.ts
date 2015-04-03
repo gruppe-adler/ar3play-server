@@ -61,13 +61,20 @@ function armaToPlayerPosition(position: Array<number>): PlayerInfo.Position {
 function armaToPlayerRole(role: Array<string>): PlayerInfo.Role {
     var
         classtype = role[1],
+        icon,
         side = role[0];
 
-    if (classtype && PlayerInfo.Classtype.values.indexOf(classtype) === -1) {
-        logger.warn('ignoring unknown classtype ' + classtype);
-        classtype = null;
+    if (classtype) {
+        icon = PlayerInfo.iconToShort(classtype);
+        if (!icon && PlayerInfo.Classtype.values.indexOf(classtype) !== -1) {
+            icon = classtype;
+        }
+        if (!icon) {
+            logger.warn('ignoring unknown classtype/icon ' + classtype);
+            icon = null;
+        }
     }
-    return new PlayerInfo.Role(side ? PlayerInfo.Side.fromGameSide(side) : null, classtype);
+    return new PlayerInfo.Role(side ? PlayerInfo.Side.fromGameSide(side) : null, icon);
 }
 
 function armaToPlayerStatus(status: Array<string>): PlayerInfo.Status {

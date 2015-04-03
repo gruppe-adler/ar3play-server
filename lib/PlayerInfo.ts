@@ -120,6 +120,18 @@ export class Classtype {
     ];
 }
 
+export function iconToShort(armaIconName: string): string {
+    /*iconMan
+    iconManMG
+    iconManOfficer
+    ...*/
+    armaIconName = armaIconName.toLowerCase();
+    if (armaIconName.indexOf('iconman') !== 0) {
+        return null;
+    }
+    return armaIconName.substr(7);
+}
+
 export class Vehicle {
     static values = ['unknown', 'helicopter', 'motorcycle', 'tank', 'truck', 'ship', 'none'];
 }

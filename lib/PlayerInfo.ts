@@ -133,7 +133,7 @@ export function iconToShort(armaIconName: string): string {
 }
 
 export class Vehicle {
-    static values = ['unknown', 'helicopter', 'motorcycle', 'tank', 'truck', 'ship', 'none'];
+    static values = ['unknown', 'helicopter', 'motorcycle', 'car', 'tank', 'truck', 'ship', 'none'];
 }
 
 export class Side {

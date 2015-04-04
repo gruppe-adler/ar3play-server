@@ -11,7 +11,11 @@ import config = require('./lib/Configuration');
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
 rpc.init(config.Rpc.port);
-webserver.init(config.Webserver.port);
+if (config.Webserver.port) {
+    webserver.init(config.Webserver.port);
+} else {
+    logger.info('HTTP port not set, will not start HTTP server');
+}
 
 if (config.environment === 'development') {
     dummyData.init();

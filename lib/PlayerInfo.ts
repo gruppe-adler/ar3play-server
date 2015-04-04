@@ -103,23 +103,6 @@ export class Status {
     }
 }
 
-export class Classtype {
-    static values = [
-        'unknown',
-        'aa',
-        'at',
-        'engineer',
-        'explosive',
-        'grenadier',
-        'leader',
-        'medic',
-        'mg',
-        'officer',
-        'recon',
-        'virtual',
-    ];
-}
-
 export function iconToShort(armaIconName: string): string {
     /*iconMan
     iconManMG
@@ -142,8 +125,9 @@ export class Side {
     static IND = 'ind';
     static CIV = 'civ';
     static EMPTY = 'empty';
+    static ENEMY = 'enemy';
 
-    static values = [Side.BLUFOR, Side.OPFOR, Side.IND, Side.CIV, Side.EMPTY];
+    static values = [Side.BLUFOR, Side.OPFOR, Side.IND, Side.CIV, Side.EMPTY, Side.ENEMY];
 
     static fromGameSide(side: string): string {
         switch (side) {
@@ -152,6 +136,7 @@ export class Side {
             case 'GUER': return Side.IND;
             case 'CIV': return Side.CIV;
             case 'EMPTY': return Side.EMPTY;
+            case 'ENEMY': return Side.ENEMY;
             default:
                 logger.warn('ignoring unknown side ' + side);
                 return null;

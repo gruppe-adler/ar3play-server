@@ -66,7 +66,7 @@ function armaToPlayerRole(role: Array<string>): PlayerInfo.Role {
     if (icon) {
         icon = PlayerInfo.iconToShort(icon);
         if (!icon) {
-            logger.warn('ignoring unknown classtype/icon ' + icon);
+            logger.warn('unknown infantry icon ' + role[1]);
             icon = null;
         }
     }

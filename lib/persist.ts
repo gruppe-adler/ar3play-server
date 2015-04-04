@@ -75,8 +75,8 @@ function getCurrentMissionSTRINGKey(): string {
 
 function getPlayerKeyLive(playerName: string, timestamp: number, cb: AsyncResultCallback<string>) {
     getCurrentMission(function (err: Error, instanceId: string) {
-        redisClient.sadd(getPlayersSETKey(instanceId), encodeURIComponent(playerName), dummyCallback);
-        var playerKey = getPlayerHASHKey(instanceId, encodeURIComponent(playerName), timestamp);
+        redisClient.sadd(getPlayersSETKey(instanceId), playerName, dummyCallback);
+        var playerKey = getPlayerHASHKey(instanceId, playerName, timestamp);
         cb(err, playerKey);
     });
 }
@@ -265,7 +265,7 @@ export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<
     cb && cb(null, 201);
 }
 
-export function setPlayerPosition(playerName, position: PlayerInfo.Position, cb?: AsyncResultCallback<any>) {
+export function setPlayerPosition(playerName: string, position: PlayerInfo.Position, cb?: AsyncResultCallback<any>) {
     setPlayerData(playerName, new PlayerInfo.PlayerInfo(position), cb);
 }
 

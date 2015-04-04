@@ -60,17 +60,13 @@ function armaToPlayerPosition(position: Array<number>): PlayerInfo.Position {
 
 function armaToPlayerRole(role: Array<string>): PlayerInfo.Role {
     var
-        classtype = role[1],
-        icon,
+        icon = role[1],
         side = role[0];
 
-    if (classtype) {
-        icon = PlayerInfo.iconToShort(classtype);
-        if (!icon && PlayerInfo.Classtype.values.indexOf(classtype) !== -1) {
-            icon = classtype;
-        }
+    if (icon) {
+        icon = PlayerInfo.iconToShort(icon);
         if (!icon) {
-            logger.warn('ignoring unknown classtype/icon ' + classtype);
+            logger.warn('ignoring unknown classtype/icon ' + icon);
             icon = null;
         }
     }

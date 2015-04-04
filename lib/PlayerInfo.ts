@@ -129,7 +129,7 @@ export function iconToShort(armaIconName: string): string {
     if (armaIconName.indexOf('iconman') !== 0) {
         return null;
     }
-    return armaIconName.substr(7);
+    return armaIconName.substr(7) || 'man';
 }
 
 export class Vehicle {

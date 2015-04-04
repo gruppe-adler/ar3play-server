@@ -114,7 +114,14 @@ function getPlayerDataAt(playerKey, cb: AsyncResultCallback<PlayerInfo.PlayerInf
 }
 
 function getAllPlayers(instanceId: string, cb: Function) {
-    redisClient.smembers(getPlayersSETKey(instanceId), cb);
+    redisClient.smembers(getPlayersSETKey(instanceId), function (err: Error, playerNames: string[]) {
+        if (Array.isArray(playerNames)) {
+            playerNames = playerNames.map(function (playerName: string) {
+                return decodeURIComponent(playerName);
+            });
+        }
+        cb(err, playerNames);
+    });
 }
 
 export function getIsStreamable(cb: AsyncResultCallback<boolean>) {

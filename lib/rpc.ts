@@ -64,7 +64,11 @@ function armaToPlayerRole(role: Array<string>): PlayerInfo.Role {
         side = role[0];
 
     if (icon) {
-        icon = PlayerInfo.iconToShort(icon);
+        if (icon === '\\a3\\Modules_f\\data\\iconHQ_ca.paa') {
+            icon = 'virtual';
+        } else {
+            icon = PlayerInfo.iconToShort(icon);
+        }
         if (!icon) {
             logger.warn('unknown infantry icon ' + role[1]);
             icon = null;

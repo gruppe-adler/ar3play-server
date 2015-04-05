@@ -191,8 +191,9 @@ function unknownMethodHandler(req, res) {
 
         return res.send(204);
     }
-    else
-        return res.send(new restify.MethodNotAllowedError());
+    else {
+        return res.send(new restify.BadMethodError('method not allowed'));
+    }
 }
 
 server.on('MethodNotAllowed', unknownMethodHandler);

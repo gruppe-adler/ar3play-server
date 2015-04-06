@@ -1,18 +1,16 @@
 /// <reference path="./../typings/tsd.d.ts" />
 
 import restify = require('restify');
-import bunyan = require('bunyan');
+import log = require('./log');
 import persist = require('./persist');
-import PlayerInfo = require('./PlayerInfo');
+import models = require('./models');
 import Mission = require('./Mission');
 import Authentication = require('./Authentication');
 import Configuration = require('./Configuration');
 
 var
-    logger = bunyan.createLogger({name: __filename.split('/').pop()}),
-    server = restify.createServer({log: bunyan.createLogger({name: 'restify'})});
-
-logger.level(Configuration.logLevel);
+    logger = log.getLogger(__filename),
+    server = restify.createServer({log: log.getLogger('restify')});
 
 function parseQuery(query: string): any {
     var params = {};
@@ -88,15 +86,17 @@ function getMissionChanges(req: restify.Request, res: restify.Response) {
         return res.send(400, 'interval must be 0<interval<100 seconds');
     }
 
-    persist.getMissionChanges(req.params.id, from, to, function (error: Error, data: HashMap<string, PlayerInfo.PlayerInfo>) {
+    persist.getMissionChanges(req.params.id, from, to, function (error: Error, data: HashMap<string, models.Unit>) {
         var result = {};
         if (error) {
             logger.error(error);
         }
 
         if (data) {
-            data.forEach(function (info: PlayerInfo.PlayerInfo, name: string) {
-                result[name] = info
+            data.forEach(function (info: models.Unit, name: string) {
+                if (info) {
+                    result[name] = info
+                }
             });
         }
 

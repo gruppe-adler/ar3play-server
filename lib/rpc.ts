@@ -2,14 +2,12 @@
 
 import _ = require('underscore');
 import persist = require('./persist');
-import PlayerInfo = require('./PlayerInfo');
-import bunyan = require('bunyan');
+import arma = require('./arma');
+import log = require('./log');
 
 var
     rpc = require('sock-rpc'),
-    logger = bunyan.createLogger({name: __filename.split('/').pop()});
-
-logger.level('info');
+    logger = log.getLogger(__filename);
 
 var keepAlive = _.debounce(function () {
     logger.warn('timeout! declaring mission as ended');
@@ -49,93 +47,38 @@ export function init(port) {
     keepAlive();
 }
 
-function armaToPlayerPosition(position: Array<number>): PlayerInfo.Position {
-    return new PlayerInfo.Position(
-        parseInt(position[0].toFixed(0), 10),
-        parseInt(position[1].toFixed(0), 10),
-        parseInt(position[2].toFixed(0), 10),
-        parseInt(position[3].toFixed(0), 10)
-    );
-}
-
-function armaToPlayerRole(role: Array<string>): PlayerInfo.Role {
-    var
-        icon = role[1],
-        side = role[0];
-
-    if (icon) {
-        if (icon === '\\a3\\Modules_f\\data\\iconHQ_ca.paa') {
-            icon = 'virtual';
-        } else {
-            icon = PlayerInfo.iconToShort(icon);
-        }
-        if (!icon) {
-            logger.warn('unknown infantry icon ' + role[1]);
-            icon = null;
-        }
-    }
-    return new PlayerInfo.Role(side ? PlayerInfo.Side.fromGameSide(side) : null, icon);
-}
-
-function armaToPlayerStatus(status: Array<string>): PlayerInfo.Status {
-    var
-        condition = status[0],
-        vehicle = status[1];
-
-    if (vehicle && PlayerInfo.Vehicle.values.indexOf(vehicle) === -1) {
-        logger.warn('ignoring unknown vehicle type ' + vehicle);
-        vehicle = null;
-    }
-    if (condition && PlayerInfo.Condition.values.indexOf(condition) === -1) {
-        logger.warn('ignoring unknown condition ' + condition);
-        condition = null;
-    }
-    return new PlayerInfo.Status(condition, vehicle);
-}
-
-function doSetPlayerPosition(name: string, position: Array<number>) {
-    persist.setPlayerPosition(
-        name,
-        armaToPlayerPosition(position)
-    );
-}
-
-/**
- *  [
- *    [ name, position: [x, y, z, dir], role: [side, classtype], status: [vehicletype, condition] ]
- *  ]
+/* [
+ *   [
+ *     id: int,
+ *     x: int,
+ *     y: int,
+ *     z: int,
+ *     dir: int,
+ *     side: string,
+ *     health: string,
+ *     icon: string,
+ *     name: string,
+ *     container: int,
+ *     content: int[]
+ *   ]
+ * ]
+ *
+ *
  */
-export function setAllPlayerData(allPlayerData: Array<Array<any>>, callback: Function) {
-    verify.arr(allPlayerData, 'positions').fn(callback, 'callback').keepAlive();
-
-    allPlayerData.forEach(function (playerData) {
-        setPlayerData(playerData);
+export function setAllUnitData(allUnitData: Array<Array<any>>, callback: Function) {
+    verify.arr(allUnitData, 'all units: array');
+    allUnitData.forEach(function (datum) {
+        setUnitDatum(datum, function () {});
     });
 
     callback && callback(null, 201);
 }
 
-export function setPlayerData(playerData: Array<any>, callback?: Function) {
-    verify.arr(playerData, 'playerData').str(playerData[0], 'playerData.name');
+export function setUnitDatum(unitData: Array<any>, callback: Function) {
+    verify.arr(unitData, 'array').keepAlive();
 
-    var
-        name = playerData[0],
-        position = playerData[1],
-        role = playerData[2],
-        status = playerData[3],
-        playerInfo = new PlayerInfo.PlayerInfo();
-
-    if (position) {
-        playerInfo.position = armaToPlayerPosition(position);
-    }
-    if (role) {
-        playerInfo.role = armaToPlayerRole(role);
-    }
-    if (status) {
-        playerInfo.status = armaToPlayerStatus(status);
-    }
-
-    persist.setPlayerData(name, playerInfo);
+    var model = arma.toUnit(unitData);
+    persist.saveUnitDatum(model);
 
     callback && callback(null, 201);
 }
@@ -149,7 +92,6 @@ export function missionStart(missionName: string, worldname: string, callback: F
     verify.str(missionName, 'missionName').str(worldname, 'worldname').keepAlive();
     logger.info('mission started: ' + missionName);
     persist.missionStart(missionName, worldname, function (error: Error) {
-
         callback(error, 200);
     });
 }
@@ -172,13 +114,6 @@ export function setIsStreamable(isStreamable: boolean, cb: Function) {
     cb(null, 201);
 }
 
-export function setPlayerPosition(name: string, position: Array<number>, callback: Function) {
-    verify.str(name, 'name').arr(position, 'position').keepAlive();
-
-    doSetPlayerPosition(name, position);
-    callback(null, 201);
-}
-
 export function echo() {
     keepAlive();
     var args = Array.prototype.slice.call(arguments, 0);
@@ -189,13 +124,22 @@ export function echo() {
     callback(null, args);
 }
 
+function notImplemented() {
+    var args = Array.prototype.slice.call(arguments, 0);
+    var callback = args.pop();
+
+    callback(new Error('not implemented'));
+}
+
 function registerAll() {
     rpc.register('echo', echo);
     rpc.register('getDate', getDate);
     rpc.register('missionStart', missionStart);
     rpc.register('missionEnd', missionEnd);
     rpc.register('setIsStreamable', setIsStreamable);
-    rpc.register('setPlayerPosition', setPlayerPosition);
-    rpc.register('setAllPlayerData', setAllPlayerData);
-    rpc.register('setPlayerData', setPlayerData);
+    rpc.register('setPlayerPosition', notImplemented);
+    rpc.register('setAllPlayerData', notImplemented);
+    rpc.register('setPlayerData', notImplemented);
+    rpc.register('setUnitDatum', setUnitDatum);
+    rpc.register('setAllUnitData', setAllUnitData);
 }

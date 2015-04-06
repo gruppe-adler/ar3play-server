@@ -1,42 +1,53 @@
 /// <reference path="./../typings/tsd.d.ts" />
 
-import PlayerInfo = require('./PlayerInfo');
 import rpc = require('./rpc');
+
+var dummyCallback = function () {};
 
 export function init() {
     var
-        dummyPos = [2000, 1684, 5, 45],
+        dummyPos = [2000, 1684, 5],
+        dummyDir = 45,
         interval, cnt = 0;
 
     rpc.missionStart('dummyMission', 'Stratis', function () {
-
-        rpc.setAllPlayerData([
-            ['refZeroZero', [1, 1, 0, 0], ['WEST', 'at'], ['alive', 'tank']],
-            ['refZeroZeroOne', [10, 10, 0, 0], ['WEST', 'at'], ['alive', 'helicopter']],
-            ['refZeroZeroTwo', [20, 10, 0, 0], ['CIV', 'unknown'], ['alive', 'truck']],
-            ['refZeroZeroThree', [10, 20, 0, 0], ['EAST', 'unknown'], ['alive', 'ship']],
-            ['refZeroZeroFour', [20, 20, 0, 0], ['GUER', 'unknown'], ['alive', 'unknown']],
-            ['refOneOne', [1000, 1000, 0, 90], null, null],
-            ['refTwoTwo', [2000, 2000, 0, 180], ['GUER', 'engineer'], ['alive']],
-            ['refThreeThree', [3000, 3000, 0, 270], ['CIV', 'explosive'], ['alive']],
-            ['refThreeThreeOne', [3010, 3010, 0, 270], ['CIV', 'explosive'], ['dead']],
-            ['dummyOpfor', dummyPos, ['EAST', 'mg'], ['alive']]
-        ], function () {
-
-        });
+        /* [
+         *   [
+         *     id: int,
+         *     [x: int, y: int, z: int],
+         *     dir: int,
+         *     side: string,
+         *     health: string,
+         *     icon: string,
+         *     name: string,
+         *     container: int,
+         *     content: int[]
+         *   ]
+         * ]
+         *
+         *
+         */
+        rpc.setAllUnitData([
+            [1, [1, 1, 0], 0, 'WEST', 'alive', 'iconManAT', 'refZeroZero'],
+            [2, [10, 10, 0], 0, 'WEST', 'alive', 'iconManAT', 'refZeroZeroOne', 3],
+            [3, [10, 10, 0], 0, 'WEST', 'alive', 'helicopter', 'Heli 1'],
+            [4, [20, 10, 0], 0, 'CIV', 'alive', 'truck', 'foo truck'],
+            [5, [10, 20, 0], 90, 'EAST', 'alive', 'unknown', 'refZeroZeroThree'],
+            [6, dummyPos, 45, 'EAST', 'alive', 'iconManOfficer', 'dummy opfor officer', null, null]
+        ], dummyCallback);
 
         rpc.setIsStreamable(true, function () {});
     });
 
     interval = setInterval(function () {
         if (cnt > 100) {
-            rpc.setPlayerData(['dummyOpfor', null, null, ['dead']]);
+            rpc.setUnitDatum([6, null, null, null, 'dead', 'iconManOfficer'], dummyCallback);
             clearInterval(interval);
         }
         cnt++;
         dummyPos[0] = dummyPos[0] + parseInt('' + Math.random() * 5, 10);
         dummyPos[1] = dummyPos[1] + parseInt('' + Math.random() * 3, 10);
-        dummyPos[3] = dummyPos[3] + parseInt('' + Math.random() * 50, 10) % 360;
-        rpc.setPlayerPosition('dummyOpfor', dummyPos, function () {});
+        dummyDir = dummyDir + parseInt('' + Math.random() * 50, 10) % 360;
+        rpc.setUnitDatum([6, dummyPos, dummyDir], dummyCallback);
     }, 1500);
 }

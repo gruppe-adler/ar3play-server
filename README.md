@@ -20,7 +20,7 @@ Arma3 mission replays.
 * `npm install`
 * edit configuration file, see `config.json.example`
 * optionally add authentication file, see `config.json.example` and `auth.ini.example`
-* start this thing
+* start this thing with `npm start`
 * start your armaserver with the sock extension pointing at host/port specified in config.json
 
 # API

@@ -20,6 +20,11 @@
     "ini": "~1.3.3"
   },
   "scripts": {
-    "install": "./node_modules/tsd/build/cli.js reinstall --save --override; node_modules/typescript/bin/tsc --module commonjs  ./*.ts */*.ts"
+    "start": "node_modules/.bin/gulp"
+  },
+  "devDependencies": {
+    "gulp": "^3.8.11",
+    "gulp-tsc": "^0.9.4",
+    "gulp-tsd": "0.0.4"
   }
 }

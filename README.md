@@ -64,66 +64,48 @@ Example:
 
 `['setIsStreamable', [true]] call sock_rpc;`
 
-### setPlayerData
+### setUnitDatum
 
 Pass update information for one player
 
 Parameters:
-* playerData (`<playerdata>`)
+
+* <unitdatum>, an array containing:
+	objectId: <objectId>
+	x: int
+	y: int
+	z: int
+	dir: 0..360
+	side: WEST|EAST|GUER|CIV|EMPTY|...
+	health: alive|unconscious|dead
+	icon: string
+	name: string
+	container: <objectId>
+	content: <array of <objectId>>
 
 
-```
-<playerdata> := playerName, <position>|false, <role>|false, <status>|false
-
-<position> := x, y, z, dir
-
-<role> := <side>, <classtype>
-<side> := WEST|EAST|GUER|CIV|EMPTY
-
-<classtype> := unknown|at|engineer|explosive|leader|medic|mg|officer|recon|virtual
-<status> := <condition>, <vehicle>
-
-<condition> := alive|unconscious|dead
-<vehicle> := unknown|helicopter|motorcycle|tank|truck|ship|none
-
-```
-
-* `x…z` are the player's coordinates as `getPos` returns them
+* `x…z` are the player's coordinates as `getPosATL` returns them
 * `dir` is the direction the unit is facing (0..360), as `dir` returns it
-* values for `vehicle` will change soon(tm)
 * "classtype" is a shitty name for what should be named "role" -.-
-* either one <position>, <role>, <status> *may* be left out and a falsy value be passed instead
+* all values may be null or otherwise empty
 
 Example:
 
 ```
 [
-	'setPlayerData',
-	['Fusselwurm', [25, 354, 0, 45], ['GUER', 'engineer'], ['alive', 'none']],
+	'setUnitDatum',
+	[25, 1545, 1554, 0, 45, 'GUER', 'alive', 'engineer', 'Fusselwurm', 3, []],
 ] call sock_rpc;
 ```
 
-### setAllPlayerData
+### setAllUnitData
 
-Pass information for several players.
+Pass information for several units.
 
 Parameters:
-* allPlayerData (array of `<playerdata>`)
+* allUnitData (array of `<unitdatum>`)
 
-see above for definition of <playerdata>
-
-Example:
-
-```
-[
-	'setAllPlayerData',
-	[
-		['Fusselwurm', [25, 354, 0, 45], ['GUER', 'engineer'], ['alive', 'none']],
-		['nomisum', [25, 350, 0, 200], ['BLUFOR', 'officer'], ['alive', 'truck']],
-	]
-] call sock_rpc;
-
-```
+see above for definition of <unitdatum>
 
 ## REST
 
@@ -150,7 +132,6 @@ Retrieve changes accumulated in the specified interval.
 ### GET /mission/:id
 
 Get details for the mission instance: starttime, endtime, world name, mission name
-
 
 ### DELETE /mission/:id
 

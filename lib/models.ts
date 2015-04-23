@@ -52,7 +52,7 @@ class Model {
         var that = this;
 
         Object.keys(that).forEach(function (key) {
-            if (model[key] === undefined || that[key] === null) {
+            if (model[key] === undefined || model[key] === null) {
                 model[key] = that[key];
             }
         });
@@ -71,4 +71,16 @@ export class Unit extends Model {
     name: string;
     content: Array<number>;
     container: number;
+
+    isComplete(): boolean {
+        // omit name. not every unit has one.
+        return this.id &&
+            this.position &&
+            (typeof this.direction === 'number') &&
+            this.side &&
+            this.health &&
+            this.icon &&
+            this.content &&
+            (typeof this.container === 'number');
+    }
 }

@@ -25,15 +25,29 @@ export function init() {
          *   ]
          * ]
          *
+         *  *   [
+         *     id: int,
+         *     x: int,
+         *     y: int,
+         *     z: int,
+         *     dir: int,
+         *     side: string,
+         *     health: string,
+         *     icon: string,
+         *     name: string,
+         *     container: int,
+         *     content: int[]
+         *   ]
+
          *
          */
         rpc.setAllUnitData([
-            [1, [1, 1, 0], 0, 'WEST', 'alive', 'iconManAT', 'refZeroZero'],
-            [2, [10, 10, 0], 0, 'WEST', 'alive', 'iconManAT', 'refZeroZeroOne', 3],
-            [3, [10, 10, 0], 0, 'WEST', 'alive', 'helicopter', 'Heli 1'],
-            [4, [20, 10, 0], 0, 'CIV', 'alive', 'truck', 'foo truck'],
-            [5, [10, 20, 0], 90, 'EAST', 'alive', 'unknown', 'refZeroZeroThree'],
-            [6, dummyPos, 45, 'EAST', 'alive', 'iconManOfficer', 'dummy opfor officer', null, null]
+            [1, 1, 1, 0, 0, 'WEST', 'alive', 'iconManAT', 'refZeroZero'],
+            [2, 10, 10, 0, 0, 'WEST', 'alive', 'iconManAT', 'refZeroZeroOne', 3],
+            [3, 10, 10, 0, 0, 'WEST', 'alive', 'helicopter', 'Heli 1'],
+            [4, 20, 10, 0, 0, 'CIV', 'alive', 'truck', 'foo truck'],
+            [5, 10, 20, 0, 90, 'EAST', 'alive', 'unknown', 'refZeroZeroThree'],
+            [6, dummyPos[0], dummyPos[1], dummyPos[2], 45, 'EAST', 'alive', 'iconManOfficer', 'dummy opfor officer', null, null]
         ], dummyCallback);
 
         rpc.setIsStreamable(true, function () {});
@@ -41,13 +55,13 @@ export function init() {
 
     interval = setInterval(function () {
         if (cnt > 100) {
-            rpc.setUnitDatum([6, null, null, null, 'dead', 'iconManOfficer'], dummyCallback);
+            rpc.setUnitDatum([6, null, null, null, null, null, 'dead', 'iconManOfficer'], dummyCallback);
             clearInterval(interval);
         }
         cnt++;
         dummyPos[0] = dummyPos[0] + parseInt('' + Math.random() * 5, 10);
         dummyPos[1] = dummyPos[1] + parseInt('' + Math.random() * 3, 10);
         dummyDir = dummyDir + parseInt('' + Math.random() * 50, 10) % 360;
-        rpc.setUnitDatum([6, dummyPos, dummyDir], dummyCallback);
+        rpc.setUnitDatum([6, dummyPos[0], dummyPos[1], dummyPos[2], dummyDir], dummyCallback);
     }, 1500);
 }

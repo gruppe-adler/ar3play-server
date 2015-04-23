@@ -80,7 +80,7 @@ function getUnitDataAt(unitKey: string, cb: AsyncResultCallback<models.Unit>) {
             return cb(error, null);
         }
         if (!playerData) {
-            logger.debug(sprintf('got no unit datum at %s', unitKey));
+            logger.trace(sprintf('got no unit datum at %s', unitKey));
             return cb(null, null);
         }
 
@@ -121,38 +121,34 @@ export function getMissionChanges(
     getAllUnits(instanceId, function (err: Error, unitIds: number[]) {
         var getPlayerData = function (unitId: number, cb: AsyncResultCallback<models.Unit>) {
             var
-                cnt,
-                timestamps: Array<number> = [],
-                getter: AsyncResultIterator<number, models.Unit> = function (
-                    timestamp: number,
-                    cb: AsyncResultCallback<models.Unit>
-                ) {
-                    getUnitDataAt(getUnitSTRINGKey(instanceId, unitId, timestamp), cb);
+                currentTimestamp: number = to,
+                getThisUnitKey: Function = _.partial(getUnitSTRINGKey, instanceId, unitId),
+                resultUnit: models.Unit = null,
+                unitDataCallback = function (err: Error, unit: models.Unit) {
+                    if (unit) {
+                        if (!resultUnit) {
+                            resultUnit = unit;
+                        } else {
+                            unit.augment(resultUnit);
+                        }
+                    }
+                    if ((currentTimestamp <= from) || (resultUnit && resultUnit.isComplete())) {
+                        logger.debug(sprintf('got result after %d iterations instead of %d', to - currentTimestamp, to - from));
+                        return cb(null, resultUnit);
+                    }
+                    if (!resultUnit && (to - currentTimestamp) > 5) {
+                        // assume we wont get data from that unit, period
+                        return cb(null, null);
+                    }
+
+                    getter();
+                },
+                getter = function () {
+                    currentTimestamp -= 1;
+                    getUnitDataAt(getThisUnitKey(currentTimestamp), unitDataCallback);
                 };
 
-            // this may seem stupid, but there seems to be a bug where this:
-            // (new Array(to - from)).map(function () {return cnt++});
-            // will not return a different array
-            for (cnt = from; cnt < to; cnt += 1) {
-                timestamps.push(cnt);
-            }
-
-            async.map(timestamps, getter, function (error: Error, results: Array<models.Unit>) {
-                var reducedPlayerInfo: models.Unit = null;
-
-                if (Array.isArray(results)) {
-                    reducedPlayerInfo = results.reduce(function (prev: models.Unit, cur: models.Unit): models.Unit {
-                        if (!prev) {
-                            return cur;
-                        }
-                        if (!cur) {
-                            return prev;
-                        }
-                        return prev.augment(cur);
-                    }, null);
-                }
-                cb(error, reducedPlayerInfo);
-            });
+            getter();
         };
 
         async.map(unitIds, getPlayerData, function (err: Error, playerData: Array<models.Unit>) {

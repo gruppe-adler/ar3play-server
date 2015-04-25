@@ -23,7 +23,7 @@ export class Rpc {
 
 function friendlyMemoryConfigToBytes(friendlyString: string): number {
     var
-        bits = friendlyString.match(/^([0-9]+)([KMG])?$/),
+        bits = friendlyString.match(/^([0-9\.]+)([KMG])?$/),
         siBase = 1024,
         siMap = {
             '': 0,
@@ -35,8 +35,8 @@ function friendlyMemoryConfigToBytes(friendlyString: string): number {
     if (!bits) {
         throw new Error(sprintf('invalid memory string. Was "%s", but should be numeric + optional K|M|G', friendlyString));
     }
-    return parseInt(bits[1], 10) * Math.pow(siBase, siMap[bits[2] || '']);
 
+    return parseFloat(bits[1]) * Math.pow(siBase, siMap[bits[2] || '']);
 }
 
 function assertTypes(collection: any, variables: any) {

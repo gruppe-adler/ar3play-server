@@ -8,6 +8,7 @@ import dummyData = require('./lib/dummyData');
 import bunyan = require('bunyan');
 import webserver = require('./lib/webserver');
 import config = require('./lib/Configuration');
+import cleanup = require('./lib/cleanup');
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
 rpc.init(config.Rpc.port);
@@ -19,6 +20,13 @@ if (config.Webserver.port) {
 
 if (config.environment === 'development') {
     dummyData.init();
+}
+
+if (config.redis_max_used_memory) {
+    logger.info('Starting to restrict Redis memory usage to approx ' + config.redis_max_used_memory + ' bytes.');
+    cleanup.init(config.redis_max_used_memory);
+} else {
+    logger.warn('Will not be monitoring Redis memory usage.');
 }
 
 logger.info('ready.');

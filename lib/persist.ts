@@ -39,6 +39,29 @@ function createMissionInstanceId(): string {
     return sprintf('%s', (new Date()).getTime());
 }
 
+function parseRedisInfo(redisInfo: string): Dictionary<string> {
+    var result: Dictionary<string> = {};
+    redisInfo.split('\n').forEach(function (line) {
+        var lineBits = line.split(':', 2);
+        if (lineBits.length < 2) {
+            return;
+        }
+        result[lineBits[0].trim()] = lineBits[1].trim();
+    });
+
+    return result;
+}
+
+export function getUsedMemory(cb: AsyncResultCallback<number>) {
+    redisClient.info(function (error: Error, redisInfo: string) {
+        if (error) {
+            throw error;
+        }
+        var redisInfoDict = parseRedisInfo(redisInfo);
+        cb(error, parseInt(redisInfoDict["used_memory"], 10));
+    });
+}
+
 export function getCurrentMission(cb: AsyncResultCallback<string>) {
     if (currentInstanceId) {
         return cb(null, currentInstanceId);
@@ -112,6 +135,12 @@ export function getAllMissions(cb: AsyncResultCallback<Array<Mission.MissionInfo
     });
 }
 
+export function getOldestMission(cb: AsyncResultCallback<Mission.MissionInfo>) {
+    redisClient.zrange(getAllMissionsZSETKey(), 0, 1, function (error: Error, instanceIds: Array<string>) {
+        getMissionDetails(instanceIds.shift(), cb);
+    });
+}
+
 export function getMissionChanges(
     instanceId: string,
     from: number,
@@ -163,7 +192,7 @@ export function getMissionChanges(
     });
 }
 
-export function getMissionDetails(instanceId: string, cb: AsyncResultCallback<Object>) {
+export function getMissionDetails(instanceId: string, cb: AsyncResultCallback<Mission.MissionInfo>) {
     redisClient.hgetall(getMissionHASHKey(instanceId), function (error: Error, data: any) {
         var missionInfo;
         if (data) {
@@ -278,7 +307,7 @@ export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
             logger.error(err);
             logger.error('could not complete deleting mission instance ' + instanceId);
         } else {
-            logger.info(sprintf('mission instance %s deleted by user %s', instanceId, Authentication.getUser().name))
+            logger.info(sprintf('mission instance %s deleted.', instanceId))
         }
         cb(err);
     });

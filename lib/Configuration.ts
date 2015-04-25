@@ -2,6 +2,10 @@
 
 import fs = require('fs');
 import _ = require('underscore');
+import sf = require('sprintf');
+
+var
+    sprintf = sf.sprintf;
 
 export class Redis {
     static host: string;
@@ -17,6 +21,24 @@ export class Rpc {
     static port: number;
 }
 
+function friendlyMemoryConfigToBytes(friendlyString: string): number {
+    var
+        bits = friendlyString.match(/^([0-9]+)([KMG])?$/),
+        siBase = 1024,
+        siMap = {
+            '': 0,
+            'K': 1,
+            'M': 2,
+            'G': 3
+        };
+
+    if (!bits) {
+        throw new Error(sprintf('invalid memory string. Was "%s", but should be numeric + optional K|M|G', friendlyString));
+    }
+    return parseInt(bits[1], 10) * Math.pow(siBase, siMap[bits[2] || '']);
+
+}
+
 function assertTypes(collection: any, variables: any) {
     _.each(variables, function (typ, name) {
         if (typeof collection[name] !== typ) {
@@ -28,6 +50,7 @@ function assertTypes(collection: any, variables: any) {
 export var environment: string = 'development';
 export var authenticationFileName: string = '';
 export var logLevel: string = 'info';
+export var redis_max_used_memory: number = 0;
 
 (function init() {
 
@@ -48,6 +71,10 @@ export var logLevel: string = 'info';
     config = JSON.parse(configFile);
     if (!config) {
         throw new Error('config seems not to be valid JSON ;(');
+    }
+
+    if (config.redis_max_used_memory) {
+        config.redis_max_used_memory = friendlyMemoryConfigToBytes(config.redis_max_used_memory)
     }
 
     assertTypes(config, {
@@ -71,4 +98,5 @@ export var logLevel: string = 'info';
     environment = config.environment;
     authenticationFileName = config.authentication_filename;
     logLevel = config.log_level || logLevel;
+    redis_max_used_memory = config.redis_max_used_memory || 0;
 }());

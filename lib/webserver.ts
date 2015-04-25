@@ -10,7 +10,8 @@ import Configuration = require('./Configuration');
 
 var
     logger = log.getLogger(__filename),
-    server = restify.createServer({log: log.getLogger('restify')});
+    server = restify.createServer({log: log.getLogger('restify')}),
+    isInMaintenanceMode: boolean = false;
 
 function parseQuery(query: string): any {
     var params = {};
@@ -41,6 +42,11 @@ export function init(port: number): void {
     server.on('uncaughtException', function (req: restify.Request, res: restify.Response, route, err: Error) {
         logger.error(err);
     });
+}
+
+export function setIsInMaintenanceMode(val: boolean) {
+
+    isInMaintenanceMode = val;
 }
 
 function returnAllMissions(req: restify.Request, res: restify.Response) {
@@ -197,6 +203,13 @@ function unknownMethodHandler(req, res) {
 }
 
 server.on('MethodNotAllowed', unknownMethodHandler);
+server.use(function (req: restify.Request, res: restify.Response, next: restify.Next) {
+    if (isInMaintenanceMode) {
+        res.send(503);
+    } else {
+        next();
+    }
+});
 server.use(function (req: restify.Request, res: restify.Response, next: restify.Next) {
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     next();

@@ -4,7 +4,7 @@ var fs = require('fs');
 var tsd = require('gulp-tsd');
 var typescript = require('gulp-tsc');
 var config = JSON.parse(fs.readFileSync(__dirname + '/config.json'));
-var pidfileName = config.pidfile || __dirname + '/pidfileName';
+var pidfileName = config.pidfile || __dirname + '/pidfile';
 var logfileName = config.logfile;
 
 gulp.task('default', ['app'], function () {

@@ -1,4 +1,4 @@
-var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
 var gulp = require('gulp');
 var tsd = require('gulp-tsd');
 var typescript = require('gulp-tsc');
@@ -9,9 +9,8 @@ gulp.task('default', ['app'], function () {
 
 gulp.task('app', ['tsc'], function (cb) {
   // launch app
-  exec('node main.js', function(err) {
-    if (err) return cb(err); // return error
-    cb(); // finished task
+  var process = spawn('node', ['main.js'], {
+      stdio: 'inherit'
   });
 });
 

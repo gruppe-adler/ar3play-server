@@ -6,13 +6,14 @@ import arma = require('./arma');
 import log = require('./log');
 
 var
+    timeout = 90000,
     rpc = require('sock-rpc'),
     logger = log.getLogger(__filename);
 
 var keepAlive = _.debounce(function () {
-    logger.warn('timeout! declaring mission as ended');
+    logger.warn('timeout! declaring mission as ended after getting no calls in ' + (timeout/1000) + ' seconds');
     persist.missionEnd();
-}, 45000);
+}, timeout);
 
 var verify = {
     str: function (variable: any, errorKey: string) {
@@ -66,7 +67,7 @@ export function init(port) {
  *
  */
 export function setAllUnitData(allUnitData: Array<Array<any>>, callback: Function) {
-    verify.arr(allUnitData, 'all units: array');
+    verify.arr(allUnitData, 'all units: array').keepAlive();
     allUnitData.forEach(function (datum) {
         setUnitDatum(datum, function () {});
     });

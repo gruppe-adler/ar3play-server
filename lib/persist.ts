@@ -10,6 +10,14 @@ import _ = require('underscore');
 import configuration = require('./configuration');
 import authentication = require('./authentication');
 import models = require('./models');
+import redisKeys = require('./redisKeys');
+
+interface UnitTimestampMap extends Dictionary<number> {}
+class UnitIdAndTimestamps {
+    id: number;
+    from: number;
+    to: number;
+}
 
 var HashMap = require('hashmap');
 var redisClient: redis.RedisClient = redis.createClient(configuration.Redis.port, configuration.Redis.host);
@@ -67,33 +75,11 @@ export function getCurrentMission(cb: AsyncResultCallback<string>) {
         return cb(null, currentInstanceId);
     }
 
-    redisClient.get(getCurrentMissionSTRINGKey(), function (err: Error, missionName: string) {
+    redisClient.get(redisKeys.getCurrentMissionSTRINGKey(), function (err: Error, missionName: string) {
        cb(err, missionName || 'empty');
     });
 }
 
-function getUnitSTRINGKey(instanceId: string, unitId: number, timestamp: number): string {
-    return sprintf('mission:%s,unit:%d,ts:%d', encodeURIComponent(instanceId), unitId, timestamp);
-}
-
-function getUnitSTRINGKeyPattern(instanceId: string): string {
-    return sprintf('mission:%s,unit*', encodeURIComponent(instanceId));
-}
-
-function getPlayersSETKey(instanceId: string) {
-    return sprintf('mission:%s,players', encodeURIComponent(instanceId));
-}
-function getMissionHASHKey(instanceId: string): string {
-    return sprintf('mission:%s,mission', encodeURIComponent(instanceId));
-}
-
-function getAllMissionsZSETKey(): string {
-    return 'missions';
-}
-
-function getCurrentMissionSTRINGKey(): string {
-    return 'currentInstanceId';
-}
 
 function getUnitDataAt(unitKey: string, cb: AsyncResultCallback<models.Unit>) {
     redisClient.get(unitKey, function (error: Error, playerData: string) {
@@ -110,34 +96,118 @@ function getUnitDataAt(unitKey: string, cb: AsyncResultCallback<models.Unit>) {
         cb(error, models.Unit.fromJSON(playerData));
     });
 }
-
+/*
 function getAllUnits(instanceId: string, cb: Function) {
-    redisClient.smembers(getPlayersSETKey(instanceId), function (err: Error, unitIds: string[]) {
+    redisClient.smembers(redisKeys.getPlayersSETKey(instanceId), function (err: Error, unitIds: string[]) {
         cb(err, unitIds.map(util.toInt));
     });
 }
-
+*/
 export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
     getCurrentMission(function (err: Error, instanceId: string) {
         if (err) {
             cb(err, false);
             return;
         }
-        redisClient.hget(getMissionHASHKey(instanceId), 'is_streamable', function (err: Error, data: string) {
+        redisClient.hget(redisKeys.getMissionHASHKey(instanceId), 'is_streamable', function (err: Error, data: string) {
             cb(err, data === '1');
         });
     });
 }
 
 export function getAllMissions(cb: AsyncResultCallback<Array<mission.MissionInfo>>) {
-    redisClient.zrevrange(getAllMissionsZSETKey(), 0, 1000, function (error: Error, instanceIds: Array<string>) {
+    redisClient.zrevrange(redisKeys.getAllMissionsZSETKey(), 0, 1000, function (error: Error, instanceIds: Array<string>) {
         async.map(instanceIds, getMissionDetails, cb);
     });
 }
 
 export function getOldestMission(cb: AsyncResultCallback<mission.MissionInfo>) {
-    redisClient.zrange(getAllMissionsZSETKey(), 0, 1, function (error: Error, instanceIds: Array<string>) {
+    redisClient.zrange(redisKeys.getAllMissionsZSETKey(), 0, 1, function (error: Error, instanceIds: Array<string>) {
         getMissionDetails(instanceIds.shift(), cb);
+    });
+}
+
+function getUnitStateChangesUpTo(redisKey: string, to: number, cb: AsyncResultCallback<UnitTimestampMap>) {
+    redisClient.zrangebyscore(
+        redisKey,
+        0,
+        to,
+        'WITHSCORES',
+        function (error: Error, results: Array<string>) { // returns array with value, score, value, score, ...
+            var i;
+            var unitIdToCreate: UnitTimestampMap = {};
+            for (i = 0; i < results.length; i += 2) {
+                unitIdToCreate[results[i]] = parseInt(results[i + 1], 10);
+            }
+            cb(error, unitIdToCreate);
+        }
+    );
+}
+
+function getUnitModels(
+    instanceId: string,
+    unitIds: Array<UnitIdAndTimestamps>,
+    cb: AsyncResultCallback<HashMap<string, models.Unit>>
+) {
+    var getPlayerData = function (unitId: UnitIdAndTimestamps, cb: AsyncResultCallback<models.Unit>) {
+        var
+            currentTimestamp: number = unitId.to,
+            getThisUnitKey: Function = _.partial(redisKeys.getUnitSTRINGKey, instanceId, unitId.id),
+            resultUnit: models.Unit = null,
+            unitDataCallback = function (err: Error, unit: models.Unit) {
+                if (unit) {
+                    if (!resultUnit) {
+                        resultUnit = unit;
+                    } else {
+                        unit.augment(resultUnit);
+                    }
+                }
+                if ((currentTimestamp <= unitId.from) || (resultUnit && resultUnit.isComplete())) {
+                    /*
+                    logger.debug(sprintf(
+                        'got result after %d iterations',
+                        unitId.to - currentTimestamp,
+                        unitId.to - unitId.from
+                    ));
+                    */
+                    return cb(null, resultUnit);
+                }
+
+                if (
+                    configuration.assumeCompleteDataAllNSeconds &&
+                    !resultUnit &&
+                    ((unitId.to - currentTimestamp) > configuration.assumeCompleteDataAllNSeconds)
+                ) {
+                    /*
+                    logger.debug(sprintf(
+                        'did not get any data for %d (%d iterations, giving up after %d)',
+                        unitId.id,
+                        unitId.to - (currentTimestamp + 1),
+                        configuration.assumeCompleteDataAllNSeconds
+                    ));*/
+                    return cb(null, null);
+                }
+
+                getter();
+            },
+            getter = function () {
+                currentTimestamp -= 1;
+                getUnitDataAt(getThisUnitKey(currentTimestamp), unitDataCallback);
+            };
+
+        getter();
+    };
+
+    async.map(unitIds, getPlayerData, function (err: Error, playerData: Array<models.Unit>) {
+        var result = new HashMap();
+
+        playerData.forEach(function (playerDatum: models.Unit) {
+            if (playerDatum) {
+                result.set(playerDatum.id, playerDatum);
+            }
+        });
+
+        cb(err, result);
     });
 }
 
@@ -147,53 +217,41 @@ export function getMissionChanges(
     to: number,
     cb: AsyncResultCallback<HashMap<string, models.Unit>>
 ) {
-    getAllUnits(instanceId, function (err: Error, unitIds: number[]) {
-        var getPlayerData = function (unitId: number, cb: AsyncResultCallback<models.Unit>) {
-            var
-                currentTimestamp: number = to,
-                getThisUnitKey: Function = _.partial(getUnitSTRINGKey, instanceId, unitId),
-                resultUnit: models.Unit = null,
-                unitDataCallback = function (err: Error, unit: models.Unit) {
-                    if (unit) {
-                        if (!resultUnit) {
-                            resultUnit = unit;
-                        } else {
-                            unit.augment(resultUnit);
-                        }
-                    }
-                    if ((currentTimestamp <= from) || (resultUnit && resultUnit.isComplete())) {
-                        logger.debug(sprintf('got result after %d iterations instead of %d', to - currentTimestamp, to - from));
-                        return cb(null, resultUnit);
-                    }
-                    if (!resultUnit && (to - currentTimestamp) > 5) {
-                        // assume we wont get data from that unit, period
-                        return cb(null, null);
-                    }
+    async.parallel(
+        [
+            function (cb: AsyncResultCallback<UnitTimestampMap>) {
+                getUnitStateChangesUpTo(redisKeys.getCreationsZSETKey(instanceId), to, cb);
+            },
+            function (cb: AsyncResultCallback<UnitTimestampMap>) {
+                getUnitStateChangesUpTo(redisKeys.getDeathsZSETKey(instanceId), to, cb);
+            }
+        ],
+        function (error: Error, results: Array<UnitTimestampMap>) {
+            var creates = results[0],
+                deaths = results[1],
+                unitIdsAndTimestamps: Array<UnitIdAndTimestamps>;
 
-                    getter();
-                },
-                getter = function () {
-                    currentTimestamp -= 1;
-                    getUnitDataAt(getThisUnitKey(currentTimestamp), unitDataCallback);
-                };
+            unitIdsAndTimestamps = Object.keys(creates).filter(function (key: string): boolean {
+                return (deaths[key] || Infinity) >= from;
+            }).map(function (key: string): UnitIdAndTimestamps {
+                var
+                    deathTimestamp = deaths[key] || Infinity,
+                    createTimestamp = creates[key] || 0,
+                    unitIdAndTimestamps = new UnitIdAndTimestamps();
 
-            getter();
-        };
-
-        async.map(unitIds, getPlayerData, function (err: Error, playerData: Array<models.Unit>) {
-            var result = new HashMap();
-
-            unitIds.forEach(function (unitId: number, idx: number) {
-                result.set(unitId, playerData[idx]);
+                unitIdAndTimestamps.id = parseInt(key, 10);
+                unitIdAndTimestamps.from = Math.max(createTimestamp + 1, from);
+                unitIdAndTimestamps.to = Math.min(deathTimestamp + 1, to);
+                return unitIdAndTimestamps;
             });
 
-            cb(err, result);
-        });
+            getUnitModels(instanceId, unitIdsAndTimestamps, cb)
     });
+
 }
 
 export function getMissionDetails(instanceId: string, cb: AsyncResultCallback<mission.MissionInfo>) {
-    redisClient.hgetall(getMissionHASHKey(instanceId), function (error: Error, data: any) {
+    redisClient.hgetall(redisKeys.getMissionHASHKey(instanceId), function (error: Error, data: any) {
         var missionInfo;
         if (data) {
             missionInfo = new mission.MissionInfo(
@@ -218,9 +276,9 @@ export function init(_redis: redis.RedisClient) {
 
 export function missionEnd(cb?: AsyncResultCallback<any>) {
     getCurrentMission(function (err: Error, instanceId: string) {
-        redisClient.hset(getMissionHASHKey(instanceId), 'endtime', getTimestampNow(), dummyCallback);
+        redisClient.hset(redisKeys.getMissionHASHKey(instanceId), 'endtime', getTimestampNow(), dummyCallback);
         currentInstanceId = 'empty';
-        redisClient.set(getCurrentMissionSTRINGKey(), 'empty', function (err: Error) {
+        redisClient.set(redisKeys.getCurrentMissionSTRINGKey(), 'empty', function (err: Error) {
             cb && cb(err, 201);
         });
     });
@@ -232,10 +290,10 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
         var now = getTimestampNow();
         currentInstanceId = createMissionInstanceId();
 
-        redisClient.set(getCurrentMissionSTRINGKey(), encodeURIComponent(currentInstanceId), dummyCallback);
-        redisClient.zadd(getAllMissionsZSETKey(), now, encodeURIComponent(currentInstanceId), dummyCallback);
+        redisClient.set(redisKeys.getCurrentMissionSTRINGKey(), encodeURIComponent(currentInstanceId), dummyCallback);
+        redisClient.zadd(redisKeys.getAllMissionsZSETKey(), now, encodeURIComponent(currentInstanceId), dummyCallback);
         redisClient.hmset(
-            getMissionHASHKey(currentInstanceId),
+            redisKeys.getMissionHASHKey(currentInstanceId),
             {
                 name: realMissionName,
                 worldname: worldname,
@@ -243,7 +301,7 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
             },
             dummyCallback
         );
-        
+
         cb && cb(null, currentInstanceId);
     });
 }
@@ -251,7 +309,7 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
 export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<any>) {
     getCurrentMission(function (err: Error, missionName: string) {
         redisClient.hmset(
-            getMissionHASHKey(missionName),
+            redisKeys.getMissionHASHKey(missionName),
             {
                 is_streamable: isStreamable ? '1' : '0'
             },
@@ -270,7 +328,7 @@ export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
 
     async.waterfall([
         function (cb: Function) {
-            redisClient.keys(getUnitSTRINGKeyPattern(instanceId), function (err: Error, keys: Array<string>) {
+            redisClient.keys(redisKeys.getUnitSTRINGKeyPattern(instanceId), function (err: Error, keys: Array<string>) {
                 cb(err, keys);
             });
         },
@@ -285,19 +343,25 @@ export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
             });
         },
         function (cb: Function) {
-            redisClient.del(getPlayersSETKey(instanceId), function (err: Error, count: number) {
-                logger.debug(sprintf('deleted %d players set from mission %s', count, instanceId));
+            redisClient.del(redisKeys.getCreationsZSETKey(instanceId), function (err: Error, count: number) {
+                logger.debug(sprintf('deleted %d players create zset from mission %s', count, instanceId));
                 cb(err);
             });
         },
         function (cb: Function) {
-            redisClient.del(getMissionHASHKey(instanceId), function (err: Error, count: number) {
+            redisClient.del(redisKeys.getDeathsZSETKey(instanceId), function (err: Error, count: number) {
+                logger.debug(sprintf('deleted %d players create zset from mission %s', count, instanceId));
+                cb(err);
+            });
+        },
+        function (cb: Function) {
+            redisClient.del(redisKeys.getMissionHASHKey(instanceId), function (err: Error, count: number) {
                 logger.debug(sprintf('deleted %d mission instance %s details', count, instanceId));
                 cb(err);
             });
         },
         function (cb: Function) {
-            redisClient.zrem(getAllMissionsZSETKey(), encodeURIComponent(instanceId), function (err: Error) {
+            redisClient.zrem(redisKeys.getAllMissionsZSETKey(), encodeURIComponent(instanceId), function (err: Error) {
                 logger.debug(sprintf('deleted mission instance %s from missions set', instanceId));
                 cb(err);
             });
@@ -323,8 +387,20 @@ export function saveUnitDatum(unit: models.Unit, cb?: AsyncResultCallback<any>) 
 
 function getUnitKeyLive(unit: models.Unit, timestamp: number, cb: AsyncResultCallback<string>) {
     getCurrentMission(function (err: Error, instanceId: string) {
-        redisClient.sadd(getPlayersSETKey(instanceId), unit.id, dummyCallback);
-        var playerKey = getUnitSTRINGKey(instanceId, unit.id, timestamp);
+        var statusRedisKey = unit.health === 'dead' ?
+            redisKeys.getDeathsZSETKey(instanceId) :
+            redisKeys.getCreationsZSETKey(instanceId);
+
+        redisClient.zscore(statusRedisKey, unit.id, function (err: Error, result: number) {
+            if (err) {
+                logger.error(err);
+                return;
+            }
+            if (!result) {
+                redisClient.zadd(statusRedisKey, timestamp, unit.id, dummyCallback);
+            }
+        });
+        var playerKey = redisKeys.getUnitSTRINGKey(instanceId, unit.id, timestamp);
         cb(err, playerKey);
     });
 }

@@ -51,6 +51,7 @@ export var environment: string = 'development';
 export var authenticationFileName: string = '';
 export var logLevel: string = 'info';
 export var redis_max_used_memory: number = 0;
+export var assumeCompleteDataAllNSeconds: number = 5;
 
 (function init() {
 
@@ -75,6 +76,10 @@ export var redis_max_used_memory: number = 0;
 
     if (config.redis_max_used_memory) {
         config.redis_max_used_memory = friendlyMemoryConfigToBytes(config.redis_max_used_memory)
+    }
+
+    if (config.assume_complete_data_every_n_seconds) {
+        assumeCompleteDataAllNSeconds = parseInt(config.assume_complete_data_every_n_seconds, 10);
     }
 
     assertTypes(config, {

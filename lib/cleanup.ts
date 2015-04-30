@@ -2,8 +2,8 @@
 
 import sf = require('sprintf');
 import log = require('./log');
-import Configuration = require('./Configuration');
-import Mission = require('./Mission');
+import Configuration = require('./configuration');
+import Mission = require('./mission');
 import persist = require('./persist');
 import webserver = require('./webserver');
 import _ = require('underscore');

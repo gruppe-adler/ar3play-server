@@ -7,7 +7,7 @@ import persist = require('./lib/persist');
 import dummyData = require('./lib/dummyData');
 import bunyan = require('bunyan');
 import webserver = require('./lib/webserver');
-import config = require('./lib/Configuration');
+import config = require('./lib/configuration');
 import cleanup = require('./lib/cleanup');
 var logger = bunyan.createLogger({name: __filename.split('/').pop()});
 

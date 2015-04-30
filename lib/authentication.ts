@@ -3,10 +3,10 @@
 import fs = require('fs');
 import _ = require('underscore');
 import ini = require('ini');
-import Configuration = require('./Configuration');
+import configuration = require('./configuration');
 
 var
-    authFilename = Configuration.authenticationFileName,
+    authFilename = configuration.authenticationFileName,
     authenticationMap: any = {},
     currentUser: User = null;
 

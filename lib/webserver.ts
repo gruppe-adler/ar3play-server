@@ -4,9 +4,9 @@ import restify = require('restify');
 import log = require('./log');
 import persist = require('./persist');
 import models = require('./models');
-import Mission = require('./Mission');
-import Authentication = require('./Authentication');
-import Configuration = require('./Configuration');
+import mission = require('./mission');
+import authentication = require('./authentication');
+import Configuration = require('./configuration');
 
 var
     logger = log.getLogger(__filename),
@@ -50,7 +50,7 @@ export function setIsInMaintenanceMode(val: boolean) {
 }
 
 function returnAllMissions(req: restify.Request, res: restify.Response) {
-    persist.getAllMissions(function (error: Error, missions: Array<Mission.MissionInfo>) {
+    persist.getAllMissions(function (error: Error, missions: Array<mission.MissionInfo>) {
 
         res.send(missions);
     });
@@ -136,9 +136,9 @@ function secretAuthentication(req: restify.Request, res: restify.Response, next:
         secret = (query.secret || req.headers.authentication);
 
     if (secret) {
-        Authentication.auth(secret);
-        user = Authentication.getUser();
-        if (user.rank === Authentication.User.RANK_ADMIN) {
+        authentication.auth(secret);
+        user = authentication.getUser();
+        if (user.rank === authentication.User.RANK_ADMIN) {
             next();
         } else {
             return res.send(403);

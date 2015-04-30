@@ -2,17 +2,17 @@
 
 import sf = require('sprintf');
 import async = require('async');
-import Mission = require('./Mission');
+import mission = require('./mission');
 import redis = require('redis');
 import log = require('./log');
 import util = require('./util');
 import _ = require('underscore');
-import Configuration = require('./Configuration');
-import Authentication = require('./Authentication');
+import configuration = require('./configuration');
+import authentication = require('./authentication');
 import models = require('./models');
 
 var HashMap = require('hashmap');
-var redisClient: redis.RedisClient = redis.createClient(Configuration.Redis.port, Configuration.Redis.host);
+var redisClient: redis.RedisClient = redis.createClient(configuration.Redis.port, configuration.Redis.host);
 var currentInstanceId: string = '';
 var sprintf = sf.sprintf;
 var logger = log.getLogger(__filename);
@@ -24,11 +24,11 @@ var dummyCallback = function (err: Error, data?: any) {
     }
 };
 
-redisClient.select(Configuration.Redis.db, function (err: Error) {
+redisClient.select(configuration.Redis.db, function (err: Error) {
     if (err) {
         throw err;
     }
-    logger.info('connected to Redis on ' + Configuration.Redis.host + ':' + Configuration.Redis.port + ', db ' + Configuration.Redis.db);
+    logger.info('connected to Redis on ' + configuration.Redis.host + ':' + configuration.Redis.port + ', db ' + configuration.Redis.db);
 });
 
 function getTimestampNow(): number {
@@ -129,13 +129,13 @@ export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
     });
 }
 
-export function getAllMissions(cb: AsyncResultCallback<Array<Mission.MissionInfo>>) {
+export function getAllMissions(cb: AsyncResultCallback<Array<mission.MissionInfo>>) {
     redisClient.zrevrange(getAllMissionsZSETKey(), 0, 1000, function (error: Error, instanceIds: Array<string>) {
         async.map(instanceIds, getMissionDetails, cb);
     });
 }
 
-export function getOldestMission(cb: AsyncResultCallback<Mission.MissionInfo>) {
+export function getOldestMission(cb: AsyncResultCallback<mission.MissionInfo>) {
     redisClient.zrange(getAllMissionsZSETKey(), 0, 1, function (error: Error, instanceIds: Array<string>) {
         getMissionDetails(instanceIds.shift(), cb);
     });
@@ -192,11 +192,11 @@ export function getMissionChanges(
     });
 }
 
-export function getMissionDetails(instanceId: string, cb: AsyncResultCallback<Mission.MissionInfo>) {
+export function getMissionDetails(instanceId: string, cb: AsyncResultCallback<mission.MissionInfo>) {
     redisClient.hgetall(getMissionHASHKey(instanceId), function (error: Error, data: any) {
         var missionInfo;
         if (data) {
-            missionInfo = new Mission.MissionInfo(
+            missionInfo = new mission.MissionInfo(
                 instanceId,
                 data.name,
                 data.worldname,

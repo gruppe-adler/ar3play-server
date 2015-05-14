@@ -19,8 +19,8 @@ export function getAllMissionsZSETKey(): string {
     return 'missions';
 }
 
-export function getCurrentMissionSTRINGKey(): string {
-    return 'currentInstanceId';
+export function getCurrentMissionSTRINGKey(serverId: string): string {
+    return sprintf('currentInstanceId:%s', serverId);
 }
 
 export function getCreationsZSETKey(instanceId: string): string {
@@ -29,4 +29,8 @@ export function getCreationsZSETKey(instanceId: string): string {
 
 export function getDeathsZSETKey(instanceId: string): string {
     return sprintf('mission:%s,deaths', instanceId);
+}
+
+export function getLastinfoZSETKey(instanceId: string): string {
+    return sprintf('mission:%s,lastinfo', instanceId);
 }

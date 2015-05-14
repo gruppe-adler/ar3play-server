@@ -24,6 +24,7 @@ var redisClient: redis.RedisClient = redis.createClient(configuration.Redis.port
 var currentInstanceId: string = '';
 var sprintf = sf.sprintf;
 var logger = log.getLogger(__filename);
+var serverId = sprintf('%d', configuration.Rpc.port);
 
 var dummyCallback = function (err: Error, data?: any) {
     if (err) {
@@ -75,7 +76,7 @@ export function getCurrentMission(cb: AsyncResultCallback<string>) {
         return cb(null, currentInstanceId);
     }
 
-    redisClient.get(redisKeys.getCurrentMissionSTRINGKey(), function (err: Error, missionName: string) {
+    redisClient.get(redisKeys.getCurrentMissionSTRINGKey(serverId), function (err: Error, missionName: string) {
        cb(err, missionName || 'empty');
     });
 }
@@ -96,13 +97,7 @@ function getUnitDataAt(unitKey: string, cb: AsyncResultCallback<models.Unit>) {
         cb(error, models.Unit.fromJSON(playerData));
     });
 }
-/*
-function getAllUnits(instanceId: string, cb: Function) {
-    redisClient.smembers(redisKeys.getPlayersSETKey(instanceId), function (err: Error, unitIds: string[]) {
-        cb(err, unitIds.map(util.toInt));
-    });
-}
-*/
+
 export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
     getCurrentMission(function (err: Error, instanceId: string) {
         if (err) {
@@ -116,7 +111,7 @@ export function getIsStreamable(cb: AsyncResultCallback<boolean>) {
 }
 
 export function getAllMissions(cb: AsyncResultCallback<Array<mission.MissionInfo>>) {
-    redisClient.zrevrange(redisKeys.getAllMissionsZSETKey(), 0, 1000, function (error: Error, instanceIds: Array<string>) {
+    redisClient.zrevrange(redisKeys.getAllMissionsZSETKey(), 0, -1, function (error: Error, instanceIds: Array<string>) {
         async.map(instanceIds, getMissionDetails, cb);
     });
 }
@@ -223,7 +218,7 @@ export function getMissionChanges(
                 getUnitStateChangesUpTo(redisKeys.getCreationsZSETKey(instanceId), to, cb);
             },
             function (cb: AsyncResultCallback<UnitTimestampMap>) {
-                getUnitStateChangesUpTo(redisKeys.getDeathsZSETKey(instanceId), to, cb);
+                getUnitStateChangesUpTo(redisKeys.getLastinfoZSETKey(instanceId), to, cb);
             }
         ],
         function (error: Error, results: Array<UnitTimestampMap>) {
@@ -247,7 +242,6 @@ export function getMissionChanges(
 
             getUnitModels(instanceId, unitIdsAndTimestamps, cb)
     });
-
 }
 
 export function getMissionDetails(instanceId: string, cb: AsyncResultCallback<mission.MissionInfo>) {
@@ -276,9 +270,14 @@ export function init(_redis: redis.RedisClient) {
 
 export function missionEnd(cb?: AsyncResultCallback<any>) {
     getCurrentMission(function (err: Error, instanceId: string) {
+        if (instanceId === 'empty') {
+            cb && cb(err, 201);
+            return;
+        }
         redisClient.hset(redisKeys.getMissionHASHKey(instanceId), 'endtime', getTimestampNow(), dummyCallback);
         currentInstanceId = 'empty';
-        redisClient.set(redisKeys.getCurrentMissionSTRINGKey(), 'empty', function (err: Error) {
+        redisClient.set(redisKeys.getCurrentMissionSTRINGKey(serverId), 'empty', function (err: Error) {
+            addLastinfoInfo(instanceId);
             cb && cb(err, 201);
         });
     });
@@ -290,7 +289,7 @@ export function missionStart(realMissionName: string, worldname: string, cb?: As
         var now = getTimestampNow();
         currentInstanceId = createMissionInstanceId();
 
-        redisClient.set(redisKeys.getCurrentMissionSTRINGKey(), encodeURIComponent(currentInstanceId), dummyCallback);
+        redisClient.set(redisKeys.getCurrentMissionSTRINGKey(serverId), encodeURIComponent(currentInstanceId), dummyCallback);
         redisClient.zadd(redisKeys.getAllMissionsZSETKey(), now, encodeURIComponent(currentInstanceId), dummyCallback);
         redisClient.hmset(
             redisKeys.getMissionHASHKey(currentInstanceId),
@@ -316,10 +315,8 @@ export function setIsStreamable(isStreamable: boolean, cb?: AsyncResultCallback<
             dummyCallback
         );
     });
-
     cb && cb(null, 201);
 }
-
 
 export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
     if (currentInstanceId === instanceId) {
@@ -351,6 +348,12 @@ export function deleteMissionInstance(instanceId: string, cb?: ErrorCallback) {
         function (cb: Function) {
             redisClient.del(redisKeys.getDeathsZSETKey(instanceId), function (err: Error, count: number) {
                 logger.debug(sprintf('deleted %d players create zset from mission %s', count, instanceId));
+                cb(err);
+            });
+        },
+        function (cb: Function) {
+            redisClient.del(redisKeys.getLastinfoZSETKey(instanceId), function (err: Error, count: number) {
+                logger.debug(sprintf('deleted %d players lastinfo zset from mission %s', count, instanceId));
                 cb(err);
             });
         },
@@ -402,5 +405,76 @@ function getUnitKeyLive(unit: models.Unit, timestamp: number, cb: AsyncResultCal
         });
         var playerKey = redisKeys.getUnitSTRINGKey(instanceId, unit.id, timestamp);
         cb(err, playerKey);
+    });
+}
+
+function addLastinfoInfo(instanceId: string) {
+    async.parallel([
+        function (cb: AsyncResultCallback<any>) {
+            redisClient.zrange(redisKeys.getCreationsZSETKey(instanceId), 0, -1, cb);
+        },
+        function (cb: AsyncResultCallback<any>) {
+            getMissionDetails(instanceId, cb);
+        }
+    ], function (err: Error, results: Array<any>) {
+        if (err) {
+            logger.error(err);
+            return;
+        }
+        var
+            unitIdsToCheckFor: Array<number> = results[0].map(util.toInt),
+            missionDetails: mission.MissionInfo = results[1],
+            currentTimestamp = missionDetails.endtime;
+
+        logger.info('adding lastinfo info to mission ' + instanceId);
+        logger.info(sprintf(
+            'working down from %d to %d, for %d units',
+            currentTimestamp,
+            missionDetails.starttime,
+            unitIdsToCheckFor.length
+        ));
+
+
+        async.doUntil(function (cb) {
+            var unitIdsForCurrentTimestamp = unitIdsToCheckFor.map(function (unitId :number) {
+                return function (cb: AsyncResultCallback<any>) {
+                    getUnitDataAt(redisKeys.getUnitSTRINGKey(instanceId, unitId, currentTimestamp), function (error: Error, unitDatum: models.Unit) {
+                        var unitIdsToCheckForIndex;
+                        if (unitDatum) {
+
+                            if (unitId === unitDatum.id) {
+                                redisClient.zadd(redisKeys.getLastinfoZSETKey(instanceId), currentTimestamp, unitId, dummyCallback);
+                                //remember: its nodejs, we dont have to worry about thread safety
+                                unitIdsToCheckForIndex = unitIdsToCheckFor.indexOf(unitId);
+                                if (unitIdsToCheckForIndex === -1) {
+                                    logger.error(sprintf('couldnt find unit id %d in check array oO. this should not happen.', unitId));
+                                } else {
+                                    unitIdsToCheckFor.splice(unitIdsToCheckForIndex, 1);
+                                }
+                            } else {
+                                logger.error(sprintf('unitDatum %s/%d%/%d contains b0rked data', instanceId, currentTimestamp, unitId));
+                            }
+                        }
+                        cb(error, unitDatum ? 0 : unitId);
+                    });
+                };
+            });
+            async.parallel(unitIdsForCurrentTimestamp, function (error: Error, unitIdsNotFound: Array<number>) {
+
+                unitIdsToCheckFor = unitIdsNotFound ? unitIdsNotFound.filter(util.identity) : [];
+                currentTimestamp -= 1;
+                cb(error);
+            });
+        }, function () {
+            return currentTimestamp < missionDetails.starttime ||  unitIdsToCheckFor.length === 0;
+        }, function (error: Error) {
+            if (error) {
+                logger.error(sprintf('adding lastinfo for mission %s failed!', instanceId));
+                logger.error(error);
+            } else {
+                logger.info(sprintf('done adding lastinfo for mission %s', instanceId));
+            }
+
+        });
     });
 }

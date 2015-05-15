@@ -22,7 +22,7 @@ Arma3 mission replays.
 	* note: `pidfile, logfile, redis_max_used_memory, webserver_port` are optional
 * optionally add authentication file, see `config.json.example` and `auth.ini.example`
 * start this thing with `npm start`
-* run your armaserver with the [ar3play-addon]((https://github.com/gruppe-adler/ar3play-addon)), and the sock extension pointing at host/port specified in config.json
+* run your armaserver with the [ar3play-addon](https://github.com/gruppe-adler/ar3play-addon), and the sock extension pointing at host/port specified in config.json
 * you can stop the process using `npm stop`
 
 # API

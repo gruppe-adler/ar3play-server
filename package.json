@@ -26,6 +26,7 @@
   "devDependencies": {
     "gulp": "^3.8.11",
     "gulp-tsc": "^0.9.4",
-    "gulp-tsd": "0.0.4"
+    "gulp-tsd": "0.0.4",
+    "mocha": "~2.3.3"
   }
 }

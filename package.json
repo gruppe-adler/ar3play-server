@@ -6,28 +6,28 @@
   },
   "version": "2.1.0",
   "dependencies": {
-    "sock-rpc": "1.0.x",
-    "redis": "0.12.x",
-    "typescript-require": "~0.2.8",
-    "typescript": "~1.4.1",
+    "sock-rpc": "^1.0",
+    "redis": "~2",
+    "typescript-require": "^0.2",
+    "typescript": "^1.5",
     "sprintf": "~0.1.5",
-    "async": "~0.9.0",
-    "bunyan": "~1.3.4",
-    "restify": "~3.0.0",
-    "hashmap": "~2.0.1",
-    "underscore": "~1.8.2",
-    "tsd": "~0.5.7",
-    "ini": "~1.3.3"
+    "async": "~1",
+    "bunyan": "^1.3",
+    "restify": "~4",
+    "hashmap": "~2",
+    "underscore": "^1.8.2",
+    "tsd": "~0.6",
+    "ini": "~1.3"
   },
   "scripts": {
     "start": "node_modules/.bin/gulp",
     "stop": "node_modules/.bin/gulp stop"
   },
   "devDependencies": {
-    "gulp": "^3.8.11",
-    "gulp-tsc": "^0.9.4",
-    "gulp-tsd": "0.0.4",
-    "mocha": "~2.3.3",
-    "chai": "~3.3.0"
+    "gulp": "^3.8",
+    "gulp-tsc": "~1",
+    "gulp-tsd": "^0.0.4",
+    "mocha": "~2.3",
+    "chai": "~3.3"
   }
 }

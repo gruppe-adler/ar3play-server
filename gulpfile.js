@@ -5,7 +5,6 @@ var tsd = require('gulp-tsd');
 var typescript = require('gulp-tsc');
 var config = JSON.parse(fs.readFileSync(__dirname + '/config.json'));
 var pidfileName = config.pidfile || __dirname + '/pidfile';
-var logfileName = config.logfile;
 
 gulp.task('default', ['app'], function () {
 
@@ -17,24 +16,12 @@ gulp.task('app', ['tsc'], function (cb) {
         logStream,
         process;
 
-
-    function writeLog(chunk) {
-        logStream.write(chunk);
-    }
-
-    if (!logfileName) {
-        options.stdio = 'inherit';
-    }
+    options.stdio = 'inherit';
 
     process = spawn('node', ['main.js'], options);
 
 
     fs.writeFileSync(pidfileName, process.pid);
-    if (logfileName) {
-        logStream = fs.createWriteStream(logfileName);
-        process.stdout.on('data', writeLog);
-        process.stderr.on('data', writeLog);
-    }
 });
 
 gulp.task('tsc', ['tsd'], function () {

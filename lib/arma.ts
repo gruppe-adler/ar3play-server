@@ -29,7 +29,6 @@ function setPosition(model: models.Unit, position: any) {
     }
     if (!Array.isArray(position) || position.length > 3) {
         logger.error('invalid position of type ' + typeof position);
-        console.log(position);
         return;
     }
     position = position.map(util.toInt);

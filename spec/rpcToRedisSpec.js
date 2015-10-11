@@ -1,4 +1,5 @@
 var
+    app = require(__dirname + '/../test.js'),
     Client = require(__dirname + '/../node_modules/sock-rpc/lib/client.js'),
     redis = require('redis'),
     async = require('async'),
@@ -25,7 +26,8 @@ var isResultError = function (returnString) {
 };
 var clientId;
 
-before(fixtures.flushDb);
+before(app.waitForApp);
+before(fixtures.flushDbAndResetApplicationState);
 
 before(fixtures.rpcConnect(function (newClientId) {
     clientId = newClientId;
@@ -137,7 +139,6 @@ describe('rpc module after mission start', function () {
         });
         it('puts unit data point into redis', function (done) {
             var pattern = redisKeys.getUnitSTRINGKeyPattern(instanceId);
-            console.log(instanceId + ' - 2');
             redisClient.keys(pattern, function (err, result) {
                 if (err) {
                     throw err;
@@ -146,7 +147,6 @@ describe('rpc module after mission start', function () {
                 expect(result.length).to.equal(1);
 
                 redisClient.get(result, function (err, result) {
-                    console.log(result);
                     expect(!!result).to.equal(true);
                     expect(JSON.parse(result)).to.deep.equal({
                         "id":1,

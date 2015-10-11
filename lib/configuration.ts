@@ -52,6 +52,7 @@ function assertTypes(collection: any, variables: any) {
 export var environment: string = 'development';
 export var authenticationFileName: string = '';
 export var logLevel: string = 'info';
+export var logfile: string = '';
 export var redis_max_used_memory: number = 0;
 export var assumeCompleteDataAllNSeconds: number = 5;
 
@@ -109,4 +110,5 @@ export var assumeCompleteDataAllNSeconds: number = 5;
     authenticationFileName = config.authentication_filename;
     logLevel = config.log_level || logLevel;
     redis_max_used_memory = config.redis_max_used_memory || 0;
+    logfile = config.logfile || '';
 }());

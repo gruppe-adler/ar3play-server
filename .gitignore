@@ -1,6 +1,7 @@
 *.map
 *.js
 !spec/*.js
+!test.js
 node_modules
 typings
 config.json

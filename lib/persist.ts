@@ -43,6 +43,10 @@ export function getPersistence(clientId: string): Persistence {
     return persistenceInstances.get(clientId);
 }
 
+export function clearPersistenceInstances() {
+    persistenceInstances.clear();
+}
+
 redisClient.select(configuration.Redis.db, function (err:Error) {
         if (err) {
             throw err;
@@ -95,7 +99,7 @@ export class Persistence {
     missionEnd(cb?:AsyncResultCallback<any>) {
         var _that = this;
         this.getCurrentMission(function (err:Error, instanceId:string) {
-            if (instanceId === 'empty') {
+            if (!instanceId || (instanceId === 'empty')) {
                 cb && cb(err, 201);
                 return;
             }

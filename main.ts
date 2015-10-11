@@ -8,8 +8,10 @@ import persist = require('./lib/persist');
 import bunyan = require('bunyan');
 import webserver = require('./lib/webserver');
 import config = require('./lib/configuration');
+import log = require('./lib/log');
 import cleanup = require('./lib/cleanup');
-var logger = bunyan.createLogger({name: __filename.split('/').pop()});
+
+var logger = log.getLogger(__filename);
 
 rpc.init(config.Rpc.ports);
 

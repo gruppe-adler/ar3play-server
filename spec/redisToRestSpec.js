@@ -1,4 +1,5 @@
 var
+    app = require(__dirname + '/../test.js'),
     Client = require(__dirname + '/../node_modules/sock-rpc/lib/client.js'),
     redis = require('redis'),
     async = require('async'),
@@ -36,9 +37,11 @@ function getMissionStartAsBeforeFunction(missionName, worldName, newInstanceIdCa
     };
 }
 
+before(app.waitForApp);
+
 before(function (done) {
     async.waterfall([
-        fixtures.flushDb,
+        fixtures.flushDbAndResetApplicationState,
         fixtures.fillRedis,
         fixtures.rpcConnect(function (newClientId) {
             clientId = newClientId;
@@ -75,7 +78,7 @@ describe('trigger cleanup', function () {
 
     frisby.
         create('cleanup without auth').
-        post(function () { console.log(instanceId); return endpoint + '/mission/' + instanceId + '/cleanup'}).
+        post(function () { return endpoint + '/mission/' + instanceId + '/cleanup'}).
         expectStatus(401).
         toss();
 

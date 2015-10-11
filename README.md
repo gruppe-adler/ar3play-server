@@ -159,5 +159,12 @@ The resulting prompt lets you call the `sock_rpc` function like so:
 
 ### Automated Tests
 
-* start arma3serverstats
-* `node_modules/mocha/bin/mocha spec`
+I'm using mocha here, tests reside in `spec/` .
+Note:
+* sock-rpc debug output will spoil your funz.
+* frisby tests fail because frisby is too retarded for my use case (alternatively, I am too retarded for frisby).
+  I will need to find something better or fix it.
+
+**DANGER THIS WILL USE YOUR NORMAL config.json , MURDER YOUR KITTENS AND CLEAR YOUR DATABASE**
+
+	npm test

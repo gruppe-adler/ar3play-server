@@ -21,7 +21,8 @@
   },
   "scripts": {
     "start": "node_modules/.bin/gulp",
-    "stop": "node_modules/.bin/gulp stop"
+    "stop": "node_modules/.bin/gulp stop",
+    "test": "node_modules/.bin/gulp mocha"
   },
   "devDependencies": {
     "gulp": "^3.8",
@@ -29,6 +30,7 @@
     "gulp-tsd": "^0.0.4",
     "mocha": "~2.3",
     "chai": "~3.3",
-    "icedfrisby": "~0.2.4"
+    "icedfrisby": "~0.2.4",
+    "gulp-mocha": "~2.1.3"
   }
 }

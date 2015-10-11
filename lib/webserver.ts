@@ -62,6 +62,12 @@ function returnCurrentMission(req: restify.Request, res: restify.Response) {
     });
 }
 
+function returnCurrentMissions(req: restify.Request, res: restify.Response) {
+    persist.getCurrentMissions(function (error: Error, instanceIds: Array<string>) {
+        res.send(200, instanceIds);
+    });
+}
+
 function getMissionDetails(req: restify.Request, res: restify.Response) {
     persist.getMissionDetails(req.params.id, function (error: Error, data: Object) {
         if (error) {
@@ -116,6 +122,10 @@ function missionAuthentication(req: restify.Request, res: restify.Response, next
             return next();
         }
 
+        return res.send(500);
+
+        // TODO: re-implement and return all mission instances from all connected rpc clients
+/*
         persist.getIsStreamable(function (error: Error, isStreamable: boolean) {
             if (error) {
                 logger.error(error);
@@ -127,6 +137,7 @@ function missionAuthentication(req: restify.Request, res: restify.Response, next
 
             next();
         });
+        */
     });
 }
 
@@ -176,6 +187,20 @@ function deleteMissionInstance(req: restify.Request, res: restify.Response, next
     });
 }
 
+function addLastinfoInfo(req: restify.Request, res: restify.Response, next: restify.Next) {
+    var instanceIdToCleanup: string = req.params.id;
+    if (!instanceIdToCleanup) {
+        return res.send(400, 'missing instance id parameter');
+    }
+    persist.addLastinfoInfo(instanceIdToCleanup, function (err: Error, instanceId: string) {
+        if (err) {
+            return res.send(500);
+        }
+        logger.info('mission instance cleanup finished: ' + instanceIdToCleanup);
+        return res.send(204);
+    });
+}
+
 function unknownMethodHandler(req, res) {
     if (req.method.toLowerCase() === 'options') {
         var allowHeaders = [
@@ -216,6 +241,8 @@ server.use(function (req: restify.Request, res: restify.Response, next: restify.
 });
 server.get('/missions', returnAllMissions);
 server.get('/currentMission', returnCurrentMission);
+server.get('/currentMissions', returnCurrentMissions);
 server.get('/mission/:id/changes', missionAuthentication, getMissionChanges);
 server.get('/mission/:id', getMissionDetails);
 server.del('/mission/:id', secretAuthentication, deleteMissionInstance);
+server.post('/mission/:id/cleanup', secretAuthentication, addLastinfoInfo);

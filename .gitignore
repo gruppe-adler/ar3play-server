@@ -1,5 +1,6 @@
 *.map
 *.js
+!spec/*.js
 node_modules
 typings
 config.json

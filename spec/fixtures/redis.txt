@@ -1,0 +1,5 @@
+ZADD missions 1444492199 1444492198815
+HMSET mission:1444492198815,mission name retro-something worldname Sara starttime 1444492199
+SET currentInstanceId:::1:59029 1444492198815
+ZADD mission:1444492198815,creates 1444492199 1
+SET mission:1444492198815,unit:1,ts:1444492199 "{\"id\":1,\"position\":[1545,1554,0],\"direction\":45,\"side\":\"GUER\",\"health\":\"alive\",\"icon\":\"engineer\",\"name\":\"Fusselwurm\",\"container\":3,\"content\":[]}"

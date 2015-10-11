@@ -140,3 +140,24 @@ Get details for the mission instance: starttime, endtime, world name, mission na
 Remove all saved data for mission instance.
 
 You MUST send an `Authorization` header. See `auth.ini.example`
+
+# Development
+
+## Testing
+
+Testing the REST part is easy, of course. There are lots of possibilities there.
+More interesting to know is how to test the RPC server.
+For that, sock-rpc has its own script to act as RPC client.
+For manual testing, use for example:
+
+	node_modules/sock-rpc/bin/sock-rpc-client --host=::1 --port=5555
+
+The resulting prompt lets you call the `sock_rpc` function like so:
+
+	connect()
+	sock_rpc('methodname', arguments)
+
+### Automated Tests
+
+* start arma3serverstats
+* `node_modules/mocha/bin/mocha spec`

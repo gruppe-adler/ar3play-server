@@ -6,7 +6,7 @@
   },
   "version": "2.1.0",
   "dependencies": {
-    "sock-rpc": "git+http://bitbucket.org/micovery/sock-rpc.git#master",
+    "sock-rpc": "^1.0.7",
     "redis": "~2",
     "typescript-require": "^0.2",
     "typescript": "^1.5",

@@ -140,3 +140,31 @@ Get details for the mission instance: starttime, endtime, world name, mission na
 Remove all saved data for mission instance.
 
 You MUST send an `Authorization` header. See `auth.ini.example`
+
+# Development
+
+## Testing
+
+Testing the REST part is easy, of course. There are lots of possibilities there.
+More interesting to know is how to test the RPC server.
+For that, sock-rpc has its own script to act as RPC client.
+For manual testing, use for example:
+
+	node_modules/sock-rpc/bin/sock-rpc-client --host=::1 --port=5555
+
+The resulting prompt lets you call the `sock_rpc` function like so:
+
+	connect()
+	sock_rpc('methodname', arguments)
+
+### Automated Tests
+
+I'm using mocha here, tests reside in `spec/` .
+Note:
+* sock-rpc debug output will spoil your funz.
+* frisby tests fail because frisby is too retarded for my use case (alternatively, I am too retarded for frisby).
+  I will need to find something better or fix it.
+
+**DANGER THIS WILL USE YOUR NORMAL config.json , MURDER YOUR KITTENS AND CLEAR YOUR DATABASE**
+
+	npm test

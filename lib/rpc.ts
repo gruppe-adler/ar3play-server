@@ -6,14 +6,10 @@ import arma = require('./arma');
 import log = require('./log');
 
 var
-    timeout = 90000,
     rpc = require('sock-rpc'),
-    logger = log.getLogger(__filename);
+    logger = log.getLogger(__filename),
+    HashMap = require('hashmap');
 
-var keepAlive = _.debounce(function () {
-    logger.warn('timeout! declaring mission as ended after getting no calls in ' + (timeout/1000) + ' seconds');
-    persist.missionEnd();
-}, timeout);
 
 var verify = {
     str: function (variable: any, errorKey: string) {
@@ -33,19 +29,20 @@ var verify = {
             throw new Error('not a function: ' + errorKey + ', but: ' + variable);
         }
         return this;
-    },
-    keepAlive: function () {
-        keepAlive();
-        return this;
     }
 };
 
-export function init(port) {
+export function init(ports) {
     registerAll();
 
-    rpc.listen("::1", port);
-    logger.info('listening for RPC calls on port ' + port);
-    keepAlive();
+    if (!Array.isArray(ports)) {
+        ports = [ports];
+    }
+
+    ports.forEach(function (port) {
+        rpc.listen("::1", port);
+        logger.info('listening for RPC calls on port ' + port);
+    });
 }
 
 /* [
@@ -66,63 +63,60 @@ export function init(port) {
  *
  *
  */
-export function setAllUnitData(allUnitData: Array<Array<any>>, callback: Function) {
-    verify.arr(allUnitData, 'all units: array').keepAlive();
+function setAllUnitData(allUnitData: Array<Array<any>>, callback: Function) {
+    verify.arr(allUnitData, 'all units: array');
+    var _that = this;
     allUnitData.forEach(function (datum) {
-        setUnitDatum(datum, function () {});
+        setUnitDatum.call(_that, datum, function () {});
     });
 
     callback && callback(null, 201);
 }
 
-export function setUnitDatum(unitData: Array<any>, callback: Function) {
-    verify.arr(unitData, 'array').keepAlive();
+function setUnitDatum(unitData: Array<any>, callback: Function) {
+    verify.arr(unitData, 'array');
 
     var model = arma.toUnit(unitData);
-    persist.saveUnitDatum(model);
+    this.saveUnitDatum(model);
 
     callback && callback(null, 201);
 }
 
-/**
- *
- * NOTE: callback is *not* called immediately here,
- *       because subsequent client requests will assume mission is already changed
- */
-export function missionStart(missionName: string, worldname: string, callback: Function) {
-    verify.str(missionName, 'missionName').str(worldname, 'worldname').keepAlive();
+function missionStart(missionName: string, worldname: string, callback: Function) {
+    verify.str(missionName, 'missionName').str(worldname, 'worldname');
     logger.info('mission started: ' + missionName);
-    persist.missionStart(missionName, worldname, function (error: Error) {
-        callback(error, 200);
+    this.missionStart(missionName, worldname, function (error: Error, instanceId: string) {
+        callback(error, instanceId);
     });
 }
 
-export function getDate(callback: Function) {
-    keepAlive();
+function getDate(callback: Function) {
     logger.debug('getDate called :)');
     callback(null, new Date().toString());
 }
 
-export function missionEnd(callback: Function) {
+function missionEnd(callback: Function) {
     logger.info('mission end called.');
-    persist.missionEnd();
+    this.missionEnd();
     callback(null, 201);
 }
 
-export function setIsStreamable(isStreamable: boolean, cb: Function) {
-    keepAlive();
-    persist.setIsStreamable(isStreamable);
+function setIsStreamable(isStreamable: boolean, cb: Function) {
+    this.setIsStreamable(isStreamable);
     cb(null, 201);
 }
 
-export function echo() {
-    keepAlive();
+function echo() {
     var args = Array.prototype.slice.call(arguments, 0);
     var callback = args.pop();
 
     logger.debug(args);
 
     callback(null, args);
+}
+
+function getClientId(callback: Function) {
+    callback(null, this.getClientId());
 }
 
 function notImplemented() {
@@ -132,15 +126,22 @@ function notImplemented() {
     callback(new Error('not implemented'));
 }
 
+function getAsPersistenceMethod(fn: Function) {
+    return function () {
+        fn.apply(persist.getPersistence(this.socketId), arguments);
+    };
+}
+
 function registerAll() {
-    rpc.register('echo', echo);
-    rpc.register('getDate', getDate);
-    rpc.register('missionStart', missionStart);
-    rpc.register('missionEnd', missionEnd);
-    rpc.register('setIsStreamable', setIsStreamable);
+    rpc.register('echo', getAsPersistenceMethod(echo));
+    rpc.register('getDate', getAsPersistenceMethod(getDate));
+    rpc.register('missionStart', getAsPersistenceMethod(missionStart));
+    rpc.register('missionEnd', getAsPersistenceMethod(missionEnd));
+    rpc.register('setIsStreamable', getAsPersistenceMethod(setIsStreamable));
     rpc.register('setPlayerPosition', notImplemented);
     rpc.register('setAllPlayerData', notImplemented);
     rpc.register('setPlayerData', notImplemented);
-    rpc.register('setUnitDatum', setUnitDatum);
-    rpc.register('setAllUnitData', setAllUnitData);
+    rpc.register('setUnitDatum', getAsPersistenceMethod(setUnitDatum));
+    rpc.register('setAllUnitData', getAsPersistenceMethod(setAllUnitData));
+    rpc.register('getClientId', getAsPersistenceMethod(getClientId));
 }

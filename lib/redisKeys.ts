@@ -19,8 +19,8 @@ export function getAllMissionsZSETKey(): string {
     return 'missions';
 }
 
-export function getCurrentMissionSTRINGKey(serverId: string): string {
-    return sprintf('currentInstanceId:%s', serverId);
+export function getCurrentMissionSTRINGKey(clientId: string): string {
+    return sprintf('currentInstanceId:%s', clientId);
 }
 
 export function getCreationsZSETKey(instanceId: string): string {

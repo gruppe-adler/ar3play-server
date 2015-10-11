@@ -4,14 +4,17 @@ import redis = require('redis');
 import http = require('http');
 import rpc = require('./lib/rpc');
 import persist = require('./lib/persist');
-import dummyData = require('./lib/dummyData');
+//import dummyData = require('./lib/dummyData');
 import bunyan = require('bunyan');
 import webserver = require('./lib/webserver');
 import config = require('./lib/configuration');
+import log = require('./lib/log');
 import cleanup = require('./lib/cleanup');
-var logger = bunyan.createLogger({name: __filename.split('/').pop()});
 
-rpc.init(config.Rpc.port);
+var logger = log.getLogger(__filename);
+
+rpc.init(config.Rpc.ports);
+
 if (config.Webserver.port) {
     webserver.init(config.Webserver.port);
 } else {
@@ -19,7 +22,7 @@ if (config.Webserver.port) {
 }
 
 if (config.environment === 'development') {
-    dummyData.init();
+    //dummyData.init();
 }
 
 if (config.redis_max_used_memory) {

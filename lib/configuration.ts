@@ -18,7 +18,7 @@ export class Webserver {
 }
 
 export class Rpc {
-    static port: number;
+    static ports: number;
 }
 
 function friendlyMemoryConfigToBytes(friendlyString: string): number {
@@ -40,9 +40,11 @@ function friendlyMemoryConfigToBytes(friendlyString: string): number {
 }
 
 function assertTypes(collection: any, variables: any) {
-    _.each(variables, function (typ, name) {
+    _.each(variables, function (typ: any, name: string) {
         if (typeof collection[name] !== typ) {
-            throw new Error(name + ' is no ' + typ + ' ( ' + collection[name] + ' )');
+		if (collection[name] && !(collection[name] instanceof typ)) {
+			throw new Error(name + ' is no ' + typ + ' ( ' + collection[name] + ' )');
+		}
         }
     });
 }
@@ -50,6 +52,7 @@ function assertTypes(collection: any, variables: any) {
 export var environment: string = 'development';
 export var authenticationFileName: string = '';
 export var logLevel: string = 'info';
+export var logfile: string = '';
 export var redis_max_used_memory: number = 0;
 export var assumeCompleteDataAllNSeconds: number = 5;
 
@@ -81,13 +84,16 @@ export var assumeCompleteDataAllNSeconds: number = 5;
     if (config.assume_complete_data_every_n_seconds) {
         assumeCompleteDataAllNSeconds = parseInt(config.assume_complete_data_every_n_seconds, 10);
     }
+	if (!Array.isArray(config.rpc_port)) {
+		config.rpc_port = [config.rpc_port];
+	}
 
     assertTypes(config, {
         redis_port: 'number',
         redis_host: 'string',
         redis_db: 'number',
         webserver_port: 'number',
-        rpc_port: 'number'
+        rpc_port: Array
     });
     if (['development', 'production'].indexOf(config.environment) === -1) {
         throw new Error('environment must be one of: development, production');
@@ -98,10 +104,11 @@ export var assumeCompleteDataAllNSeconds: number = 5;
     Redis.db = config.redis_db;
 
     Webserver.port = config.webserver_port;
-    Rpc.port = config.rpc_port;
+    Rpc.ports = config.rpc_port;
 
     environment = config.environment;
     authenticationFileName = config.authentication_filename;
     logLevel = config.log_level || logLevel;
     redis_max_used_memory = config.redis_max_used_memory || 0;
+    logfile = config.logfile || '';
 }());

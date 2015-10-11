@@ -6,7 +6,7 @@
   },
   "version": "2.1.0",
   "dependencies": {
-    "sock-rpc": "^1.0",
+    "sock-rpc": "git+http://bitbucket.org/micovery/sock-rpc.git#master",
     "redis": "~2",
     "typescript-require": "^0.2",
     "typescript": "^1.5",
@@ -21,13 +21,16 @@
   },
   "scripts": {
     "start": "node_modules/.bin/gulp",
-    "stop": "node_modules/.bin/gulp stop"
+    "stop": "node_modules/.bin/gulp stop",
+    "test": "node_modules/.bin/gulp mocha"
   },
   "devDependencies": {
     "gulp": "^3.8",
     "gulp-tsc": "~1",
     "gulp-tsd": "^0.0.4",
     "mocha": "~2.3",
-    "chai": "~3.3"
+    "chai": "~3.3",
+    "icedfrisby": "~0.2.4",
+    "gulp-mocha": "~2.1.3"
   }
 }

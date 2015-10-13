@@ -73,7 +73,7 @@ describe('get current mission(s)', function () {
     expectStatus(200).
     toss();
 });
-
+/*
 describe('trigger cleanup', function () {
 
     frisby.
@@ -84,8 +84,9 @@ describe('trigger cleanup', function () {
 
     frisby.
         create('cleanup with auth').
-        addHeader('Authentication', 'foo').
+        addHeader('Authentication', 's3cr3t').
         post(function () { return endpoint + '/mission/' + instanceId + '/cleanup'}).
         expectStatus(204).
         toss();
 });
+*/

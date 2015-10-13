@@ -43,7 +43,7 @@ gulp.task('stop', function () {
 
 gulp.task('mocha', ['tsc'], function () {
     return gulp.src(__dirname + '/spec/*.js').
-        pipe(mocha({reporter: 'nyan'})).
+        pipe(mocha({reporter: 'spec'})).
         once('error', function () { process.exit(1); }).
         once('end', function () { process.exit(); });
 });

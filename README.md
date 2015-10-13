@@ -1,5 +1,7 @@
 Arma3 mission replays.
 
+[![Build Status](https://travis-ci.org/gruppe-adler/ar3play-server.svg?branch=master)](https://travis-ci.org/gruppe-adler/ar3play-server)
+
 # Prerequisites
 
 * [`sock.dll` / `sock.so` Arma3 server extension](https://bitbucket.org/micovery/sock.dll)

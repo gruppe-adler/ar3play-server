@@ -6,17 +6,17 @@ var
     expect = require('chai').expect,
     config = require(__dirname + '/../lib/configuration.js'),
     redisKeys = require(__dirname + '/../lib/redisKeys.js'),
-    fixtures = require(__dirname + '/fixtures/missionStartEtc.js');
+    setup = require(__dirname + '/fixtures/setupFunctions.js');
 
-var doRpc = fixtures.doRpc;
+var doRpc = setup.doRpc;
 
 var redisClient = redis.createClient(config.Redis.port, config.Redis.host);
 
 var client = new Client({host: '::1', port: config.Rpc.ports[0]});
 
-fixtures.setRedis(redisClient);
-fixtures.setConfig(config);
-fixtures.setRpcClient(client);
+setup.setRedis(redisClient);
+setup.setConfig(config);
+setup.setRpcClient(client);
 
 var parseResult = function (returnString) {
     return JSON.parse(returnString)[1];
@@ -26,24 +26,17 @@ var isResultError = function (returnString) {
 };
 var clientId;
 
-before(app.waitForApp);
-before(fixtures.flushDbAndResetApplicationState);
+before(function (done) {
+    async.waterfall([
+        app.waitForApp,
+        setup.flushDbAndResetApplicationState,
+        setup.rpcConnect(function (newClientId) {
+            clientId = newClientId;
+        }),
+        function () { done(); }
+    ]);
+});
 
-before(fixtures.rpcConnect(function (newClientId) {
-    clientId = newClientId;
-}));
-
-function getMissionStartAsBeforeFunction(missionName, worldName, newInstanceIdCallback) {
-    return function (done) {
-        doRpc('missionStart', [missionName, worldName], function (err, result) {
-            var newInstanceId = parseResult(result);
-            expect(newInstanceId).to.be.a('string');
-            expect(newInstanceId.length).to.be.above(6);
-            newInstanceIdCallback(newInstanceId);
-            done();
-        });
-    };
-}
 
 describe('echo', function () {
     it('receives and echos hello', function (done) {
@@ -57,7 +50,7 @@ describe('echo', function () {
 describe('rpc module after mission start', function () {
     var instanceId;
 
-    before(getMissionStartAsBeforeFunction(
+    before(setup.getMissionStartAsBeforeFunction(
         'retro-something',
         'Sara',
         function (newInstanceId) { instanceId = newInstanceId}

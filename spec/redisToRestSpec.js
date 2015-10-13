@@ -7,46 +7,28 @@ var
 
     frisby = require('icedfrisby'),
     endpoint = 'http://localhost:' + config.Webserver.port,
-    fixtures = require(__dirname + '/fixtures/missionStartEtc.js');
+    setup = require(__dirname + '/fixtures/setupFunctions.js');
 
 var
     redisClient = redis.createClient(config.Redis.port, config.Redis.host),
     instanceId,
-    clientId,
-    doRpc = fixtures.doRpc;
+    clientId;
 
 var client = new Client({host: '::1', port: config.Rpc.ports[0]});
-var parseResult = function (returnString) {
-    return JSON.parse(returnString)[1];
-};
 
-
-fixtures.setRedis(redisClient);
-fixtures.setConfig(config);
-fixtures.setRpcClient(client);
-
-function getMissionStartAsBeforeFunction(missionName, worldName, newInstanceIdCallback) {
-    return function (done) {
-        doRpc('missionStart', [missionName, worldName], function (err, result) {
-            var newInstanceId = parseResult(result);
-            expect(newInstanceId).to.be.a('string');
-            expect(newInstanceId.length).to.be.above(6);
-            newInstanceIdCallback(newInstanceId);
-            done();
-        });
-    };
-}
-
-before(app.waitForApp);
+setup.setRedis(redisClient);
+setup.setConfig(config);
+setup.setRpcClient(client);
 
 before(function (done) {
     async.waterfall([
-        fixtures.flushDbAndResetApplicationState,
-        fixtures.fillRedis,
-        fixtures.rpcConnect(function (newClientId) {
+        app.waitForApp,
+        setup.flushDbAndResetApplicationState,
+        setup.fillRedis,
+        setup.rpcConnect(function (newClientId) {
             clientId = newClientId;
         }),
-        getMissionStartAsBeforeFunction('foo', 'Altis', function (newInstanceId) {
+        setup.getMissionStartAsBeforeFunction('foo', 'Altis', function (newInstanceId) {
             instanceId = newInstanceId;
         }),
         function () { done(); }

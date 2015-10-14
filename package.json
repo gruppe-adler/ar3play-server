@@ -6,7 +6,7 @@
   },
   "version": "2.1.0",
   "dependencies": {
-    "sock-rpc": "^1.0.7",
+    "sock-rpc": "git+http://bitbucket.org/Fusselwurm/sock-rpc.git#13ef375d0b3b11834f1e70ba2338efe881451497",
     "redis": "~2",
     "typescript-require": "^0.2",
     "typescript": "^1.5",

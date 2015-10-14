@@ -32,6 +32,14 @@ var verify = {
     }
 };
 
+(function (rpcLogger: any) {
+    rpcLogger.severe = rpcLogger.error;
+    rpcLogger.fine = rpcLogger.debug;
+    rpcLogger.finer = rpcLogger.debug;
+    rpcLogger.finest= rpcLogger.trace;
+    rpc.setLogger(rpcLogger);
+}(log.getLogger('sock-rpc')));
+
 export function init(ports) {
     registerAll();
 
